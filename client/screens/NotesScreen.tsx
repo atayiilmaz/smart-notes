@@ -18,7 +18,7 @@ interface Note {
   timestamp: number;
 }
 
-export default function Index() {
+export default function NotesScreen() {
   const [notes, setNotes] = useState<Note[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
 
