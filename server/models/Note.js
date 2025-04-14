@@ -9,10 +9,6 @@ const noteSchema = new mongoose.Schema({
     content: {
         type: String,
         required: true
-    },
-    summary: {
-        type: String,
-        default: ''
     }
 }, {
     timestamps: true

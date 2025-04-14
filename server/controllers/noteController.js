@@ -1,10 +1,40 @@
 const Note = require('../models/Note');
 
-// Get all notes
+// Get all notes with pagination
 const getAllNotes = async (req, res) => {
     try {
-        const notes = await Note.find().sort({ createdAt: -1 });
-        res.json(notes);
+        // Parse query parameters with defaults
+        const page = parseInt(req.query.page) || 1;
+        const limit = parseInt(req.query.limit) || 10;
+
+        // Calculate skip value for pagination
+        const skip = (page - 1) * limit;
+
+        // Get total count for pagination metadata
+        const totalCount = await Note.countDocuments();
+
+        // Get paginated notes
+        const notes = await Note.find()
+            .sort({ createdAt: -1 })
+            .skip(skip)
+            .limit(limit);
+
+        // Calculate pagination metadata
+        const totalPages = Math.ceil(totalCount / limit);
+        const hasNextPage = page < totalPages;
+        const hasPrevPage = page > 1;
+
+        res.json({
+            data: notes,
+            pagination: {
+                currentPage: page,
+                totalPages,
+                totalItems: totalCount,
+                limit,
+                hasNextPage,
+                hasPrevPage
+            }
+        });
     } catch (error) {
         res.status(500).json({ message: error.message });
     }
@@ -51,9 +81,6 @@ const updateNote = async (req, res) => {
         }
         if (req.body.content != null) {
             note.content = req.body.content;
-        }
-        if (req.body.summary != null) {
-            note.summary = req.body.summary;
         }
 
         const updatedNote = await note.save();
