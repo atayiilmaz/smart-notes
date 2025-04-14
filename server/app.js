@@ -1,19 +1,30 @@
-var express = require('express');
-var path = require('path');
-var cookieParser = require('cookie-parser');
-var logger = require('morgan');
+require('dotenv').config();
+const express = require('express');
+const logger = require('morgan');
+const cors = require('cors');
+const connectDB = require('./config/db');
 
 const notesRouter = require('./routes/notesRouter');
 const summarizeRouter = require('./routes/summarizeRouter');
 
-var app = express();
+// Connect to MongoDB
+connectDB();
 
+const app = express();
+
+// Middleware
+app.use(cors());
 app.use(logger('dev'));
 app.use(express.json());
-app.use(express.urlencoded({ extended: false }));
-app.use(cookieParser());
 
-app.use('/notes', notesRouter);
-app.use('/summarize', summarizeRouter);
+// Routes
+app.use('/api/notes', notesRouter);
+app.use('/api/summarize', summarizeRouter);
+
+// Error handling middleware
+app.use((err, req, res, next) => {
+    console.error(err.stack);
+    res.status(500).json({ message: 'Something went wrong!' });
+});
 
 module.exports = app;
