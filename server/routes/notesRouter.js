@@ -1,12 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { 
-    getAllNotes,
-    createNote,
-    getNoteById,
-    updateNote,
-    deleteNote
-} = require('../controllers/noteController');
+const noteController = require('../controllers/noteController');
 
 /**
  * @swagger
@@ -105,8 +99,8 @@ const {
  *               $ref: '#/components/schemas/Note'
  */
 router.route('/')
-    .get(getAllNotes)
-    .post(createNote);
+    .get(noteController.getAllNotes)
+    .post(noteController.createNote);
 
 /**
  * @swagger
@@ -167,8 +161,8 @@ router.route('/')
  *         description: Note not found
  */
 router.route('/:id')
-    .get(getNoteById)
-    .patch(updateNote)
-    .delete(deleteNote);
+    .get(noteController.getNoteById)
+    .patch(noteController.updateNote)
+    .delete(noteController.deleteNote);
 
 module.exports = router;

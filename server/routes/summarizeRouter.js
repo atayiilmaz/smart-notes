@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { summarizeContent } = require('../controllers/summarizeController');
+const summarizeController = require('../controllers/summarizeController');
 
 /**
  * @swagger
@@ -42,6 +42,6 @@ const { summarizeContent } = require('../controllers/summarizeController');
  *                   example: Text is required
  */
 router.route('/')
-    .post(summarizeContent);
+    .post(summarizeController.summarizeContent);
 
 module.exports = router;
