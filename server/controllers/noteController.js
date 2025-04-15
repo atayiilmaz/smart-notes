@@ -10,11 +10,11 @@ const getAllNotes = async (req, res) => {
         // Calculate skip value for pagination
         const skip = (page - 1) * limit;
 
-        // Get total count for pagination metadata
-        const totalCount = await Note.countDocuments();
+        // Get total count for pagination metadata (only user's notes)
+        const totalCount = await Note.countDocuments({ user: req.user._id });
 
-        // Get paginated notes
-        const notes = await Note.find()
+        // Get paginated notes (only user's notes)
+        const notes = await Note.find({ user: req.user._id })
             .sort({ createdAt: -1 })
             .skip(skip)
             .limit(limit);
@@ -42,24 +42,23 @@ const getAllNotes = async (req, res) => {
 
 // Create a new note
 const createNote = async (req, res) => {
-    const note = new Note({
-        title: req.body.title,
-        content: req.body.content
-    });
-
     try {
-        const newNote = await note.save();
-        res.status(201).json(newNote);
+        const note = new Note({
+            ...req.body,
+            user: req.user._id // Add user reference
+        });
+        await note.save();
+        res.status(201).json(note);
     } catch (error) {
         res.status(400).json({ message: error.message });
     }
 };
 
-// Get one note by ID
+// Get single note by ID
 const getNoteById = async (req, res) => {
     try {
-        const note = await Note.findById(req.params.id);
-        if (note == null) {
+        const note = await Note.findOne({ _id: req.params.id, user: req.user._id });
+        if (!note) {
             return res.status(404).json({ message: 'Note not found' });
         }
         res.json(note);
@@ -71,20 +70,23 @@ const getNoteById = async (req, res) => {
 // Update a note
 const updateNote = async (req, res) => {
     try {
-        const note = await Note.findById(req.params.id);
-        if (note == null) {
+        const note = await Note.findOne({ _id: req.params.id, user: req.user._id });
+        if (!note) {
             return res.status(404).json({ message: 'Note not found' });
         }
 
-        if (req.body.title != null) {
-            note.title = req.body.title;
-        }
-        if (req.body.content != null) {
-            note.content = req.body.content;
-        }
+        // Update allowed fields
+        const updates = req.body;
+        const allowedUpdates = ['title', 'content'];
 
-        const updatedNote = await note.save();
-        res.json(updatedNote);
+        Object.keys(updates).forEach((update) => {
+            if (allowedUpdates.includes(update)) {
+                note[update] = updates[update];
+            }
+        });
+
+        await note.save();
+        res.json(note);
     } catch (error) {
         res.status(400).json({ message: error.message });
     }
@@ -93,11 +95,10 @@ const updateNote = async (req, res) => {
 // Delete a note
 const deleteNote = async (req, res) => {
     try {
-        const note = await Note.findById(req.params.id);
-        if (note == null) {
+        const note = await Note.findOneAndDelete({ _id: req.params.id, user: req.user._id });
+        if (!note) {
             return res.status(404).json({ message: 'Note not found' });
         }
-        await note.deleteOne();
         res.json({ message: 'Note deleted successfully' });
     } catch (error) {
         res.status(500).json({ message: error.message });

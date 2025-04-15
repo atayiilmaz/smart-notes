@@ -38,9 +38,9 @@ const router = express.Router();
  *             email:
  *               type: string
  *               description: User's email
- *             name:
+ *             username:
  *               type: string
- *               description: User's name
+ *               description: User's username
  *         token:
  *           type: string
  *           description: JWT authentication token

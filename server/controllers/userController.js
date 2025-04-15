@@ -4,7 +4,7 @@ const User = require('../models/User');
 // Sign up user
 const signup = async (req, res) => {
     try {
-        const { email, password, name } = req.body;
+        const { email, password, username } = req.body;
         
         // Check if user already exists
         const existingUser = await User.findOne({ email });
@@ -12,7 +12,7 @@ const signup = async (req, res) => {
             return res.status(400).json({ error: 'Email already exists' });
         }
 
-        const user = new User({ email, password, name });
+        const user = new User({ email, password, username });
         await user.save();
 
         res.status(201).json({
@@ -62,7 +62,7 @@ const getProfile = async (req, res) => {
         user: {
             id: req.user._id,
             email: req.user.email,
-            name: req.user.name
+            username: req.user.username
         }
     });
 };
