@@ -25,7 +25,19 @@ const summarizeText = async (text) => {
         return completion.choices[0].message.content.trim();
     } catch (error) {
         console.error('Error in summarization:', error);
-        // Fallback to simple summarization if API call fails
+        
+        // If it's a quota/rate limit error, use mock implementation
+        if (error.message.includes('quota') || error.message.includes('RateLimit')) {
+            console.log('Using mock implementation due to API quota/rate limit');
+            // Mock implementation - create a simple summary
+            const sentences = text.split(/[.!?]+/).filter(s => s.trim().length > 0);
+            if (sentences.length > 0) {
+                const summary = sentences.slice(0, 2).join('. ') + '.';
+                return summary;
+            }
+        }
+        
+        // Fallback to simple word-based summarization
         const words = text.split(' ');
         if (words.length <= 15) return text;
         return words.slice(0, 15).join(' ') + '...';
