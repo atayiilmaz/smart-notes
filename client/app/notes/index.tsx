@@ -1,75 +1,189 @@
 import React, { useEffect, useState } from 'react';
-import { Text, View, Button, ActivityIndicator, ScrollView } from 'react-native';
+import { View, StyleSheet, FlatList, RefreshControl, TextInput, TouchableOpacity, Text } from 'react-native';
 import { useRouter } from 'expo-router';
-import { removeToken, getToken } from '../../utils/storage';
-import { getNotes, Note } from '../../utils/api';
+import { Note } from '../../utils/api';
+import { getToken, removeToken } from '../../utils/storage';
+import { getNotes } from '../../utils/api';
+import { NoteCard } from '../../components/NoteCard';
+import { BaseButton } from '../../components/Button';
+import { syncNotes } from '../../utils/sync';
+import { Ionicons } from '@expo/vector-icons';
 
 export default function Notes() {
     const router = useRouter();
     const [notes, setNotes] = useState<Note[]>([]);
+    const [filteredNotes, setFilteredNotes] = useState<Note[]>([]);
+    const [searchQuery, setSearchQuery] = useState('');
     const [loading, setLoading] = useState(true);
+    const [refreshing, setRefreshing] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
-    useEffect(() => {
-        const fetchNotes = async () => {
-            setLoading(true);
-            setError(null);
-            try {
-                const token = await getToken();
-                if (!token) {
-                    router.replace('/(auth)/signIn');
-                    return;
-                }
-                const fetchedNotes = await getNotes(token);
-                setNotes(Array.isArray(fetchedNotes) ? fetchedNotes : []);
-            } catch (err: any) {
-                setError(err?.message || JSON.stringify(err));
-            } finally {
-                setLoading(false);
+    const fetchNotes = async () => {
+        try {
+            const token = await getToken();
+            if (!token) {
+                router.replace('/(auth)/signIn');
+                return;
             }
-        };
+            const fetchedNotes = await getNotes(token);
+            setNotes(Array.isArray(fetchedNotes) ? fetchedNotes : []);
+            setFilteredNotes(Array.isArray(fetchedNotes) ? fetchedNotes : []);
+            setError(null);
+        } catch (err: any) {
+            setError(err?.message || 'Failed to fetch notes');
+        } finally {
+            setLoading(false);
+            setRefreshing(false);
+        }
+    };
+
+    useEffect(() => {
         fetchNotes();
     }, []);
+
+    useEffect(() => {
+        if (searchQuery.trim() === '') {
+            setFilteredNotes(notes);
+        } else {
+            const filtered = notes.filter(note => 
+                note.title.toLowerCase().includes(searchQuery.toLowerCase())
+            );
+            setFilteredNotes(filtered);
+        }
+    }, [searchQuery, notes]);
+
+    const handleRefresh = async () => {
+        setRefreshing(true);
+        await syncNotes();
+        await fetchNotes();
+    };
 
     const handleSignOut = async () => {
         await removeToken();
         router.replace('/(auth)/signIn');
     };
 
+    const handleNotePress = (note: Note) => {
+        if (note._id) {
+            router.push(`/notes/${note._id}` as any);
+        }
+    };
+
+    const handleCreateNote = () => {
+        router.push('/notes/create' as any);
+    };
+
     if (loading) {
         return (
-            <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-                <ActivityIndicator size="large" color="#007AFF" />
-            </View>
-        );
-    }
-
-    if (error) {
-        return (
-            <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-                <Text style={{ color: 'red' }}>Error: {error}</Text>
-                <Button title="Sign Out" onPress={handleSignOut} />
+            <View style={styles.container}>
+                <View style={styles.loadingContainer}>
+                    <BaseButton
+                        title="Sign Out"
+                        onPress={handleSignOut}
+                        variant="outline"
+                        style={styles.signOutButton}
+                    />
+                </View>
             </View>
         );
     }
 
     return (
-        <ScrollView contentContainerStyle={{ padding: 24 }}>
-            <Text style={{ fontSize: 24, fontWeight: 'bold', marginBottom: 16 }}>Notes</Text>
-            {notes.length === 0 ? (
-                <Text>No notes found.</Text>
-            ) : (
-                notes.map(note => (
-                    <View key={note._id} style={{ marginBottom: 16, padding: 12, backgroundColor: '#f0f0f0', borderRadius: 8 }}>
-                        <Text style={{ fontSize: 18, fontWeight: 'bold' }}>{note.title}</Text>
-                        <Text>{note.content}</Text>
-                        {note.summary && (
-                            <Text style={{ fontStyle: 'italic', marginTop: 4 }}>Summary: {note.summary}</Text>
-                        )}
+        <View style={styles.container}>
+            <View style={styles.header}>
+                <TextInput
+                    style={styles.searchBar}
+                    placeholder="Search notes..."
+                    value={searchQuery}
+                    onChangeText={setSearchQuery}
+                />
+            </View>
+
+            <FlatList
+                data={filteredNotes}
+                renderItem={({ item }) => (
+                    <NoteCard
+                        note={item}
+                        onPress={() => handleNotePress(item)}
+                        style={styles.noteCard}
+                    />
+                )}
+                keyExtractor={(item) => item._id || item.id || Math.random().toString()}
+                contentContainerStyle={styles.listContent}
+                refreshControl={
+                    <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
+                }
+                ListEmptyComponent={
+                    <View style={styles.emptyContainer}>
+                        <BaseButton
+                            title="Create Your First Note"
+                            onPress={handleCreateNote}
+                        />
                     </View>
-                ))
-            )}
-            <Button title="Sign Out" onPress={handleSignOut} />
-        </ScrollView>
+                }
+            />
+
+            <TouchableOpacity style={styles.fab} onPress={handleCreateNote}>
+                <Ionicons name="add" size={24} color="#fff" />
+            </TouchableOpacity>
+        </View>
     );
 }
+
+const styles = StyleSheet.create({
+    container: {
+        flex: 1,
+        backgroundColor: '#F2F2F7',
+    },
+    header: {
+        backgroundColor: '#fff',
+        borderBottomWidth: 1,
+        borderBottomColor: '#E5E5EA',
+        padding: 16,
+    },
+    searchBar: {
+        height: 40,
+        backgroundColor: '#F2F2F7',
+        borderRadius: 8,
+        paddingHorizontal: 12,
+    },
+    loadingContainer: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    listContent: {
+        padding: 16,
+    },
+    noteCard: {
+        marginBottom: 16,
+    },
+    emptyContainer: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+        padding: 24,
+    },
+    fab: {
+        position: 'absolute',
+        right: 16,
+        bottom: 16,
+        width: 56,
+        height: 56,
+        borderRadius: 28,
+        backgroundColor: '#007AFF',
+        justifyContent: 'center',
+        alignItems: 'center',
+        elevation: 4,
+        shadowColor: '#000',
+        shadowOffset: {
+            width: 0,
+            height: 2,
+        },
+        shadowOpacity: 0.25,
+        shadowRadius: 3.84,
+    },
+    signOutButton: {
+        // Add appropriate styles for the sign out button
+    },
+});

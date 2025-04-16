@@ -1,21 +1,32 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, Button, StyleSheet, Alert } from 'react-native';
+import { View, StyleSheet, Alert } from 'react-native';
 import { useRouter } from 'expo-router';
 import { login } from '../../utils/api';
 import { saveToken } from '../../utils/storage';
+import { Button } from '../../components/Button';
+import { TextField } from '../../components/TextField';
 
 export default function SignIn() {
+    const router = useRouter();
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [loading, setLoading] = useState(false);
-    const router = useRouter();
+    const [errors, setErrors] = useState<{ email?: string; password?: string }>({});
+
+    const validateForm = () => {
+        const newErrors: { email?: string; password?: string } = {};
+        if (!email) newErrors.email = 'Email is required';
+        if (!password) newErrors.password = 'Password is required';
+        setErrors(newErrors);
+        return Object.keys(newErrors).length === 0;
+    };
 
     const handleSignIn = async () => {
+        if (!validateForm()) return;
+
         setLoading(true);
         try {
-            console.log("About to call login API");
             const res = await login(email, password);
-            console.log("Login response:", res);
             await saveToken(res.token);
             router.replace('/notes');
         } catch (e: any) {
@@ -27,18 +38,54 @@ export default function SignIn() {
 
     return (
         <View style={styles.container}>
-            <Text style={styles.header}>Sign In</Text>
-            <TextInput style={styles.input} placeholder="Email" autoCapitalize="none" keyboardType="email-address" value={email} onChangeText={setEmail} />
-            <TextInput style={styles.input} placeholder="Password" secureTextEntry value={password} onChangeText={setPassword} />
-            <Button title={loading ? 'Signing in...' : 'Sign In'} onPress={handleSignIn} disabled={loading} />
-            <Text style={styles.link} onPress={() => router.push('/(auth)/signUp')}>Don't have an account? Sign Up</Text>
+            <View style={styles.content}>
+                <TextField
+                    label="Email"
+                    value={email}
+                    onChangeText={setEmail}
+                    placeholder="Enter your email"
+                    keyboardType="email-address"
+                    autoCapitalize="none"
+                    error={errors.email}
+                />
+
+                <TextField
+                    label="Password"
+                    value={password}
+                    onChangeText={setPassword}
+                    placeholder="Enter your password"
+                    secureTextEntry
+                    error={errors.password}
+                />
+
+                <Button
+                    title="Sign In"
+                    onPress={handleSignIn}
+                    loading={loading}
+                    style={styles.button}
+                />
+
+                <Button
+                    title="Don't have an account? Sign Up"
+                    onPress={() => router.push('/(auth)/signUp')}
+                    variant="outline"
+                />
+            </View>
         </View>
     );
 }
 
 const styles = StyleSheet.create({
-    container: { flex: 1, justifyContent: 'center', padding: 24 },
-    header: { fontSize: 28, fontWeight: 'bold', marginBottom: 24, alignSelf: 'center' },
-    input: { borderWidth: 1, borderColor: '#ccc', borderRadius: 8, padding: 12, marginBottom: 16 },
-    link: { color: '#007AFF', marginTop: 16, textAlign: 'center' },
+    container: {
+        flex: 1,
+        backgroundColor: '#fff',
+    },
+    content: {
+        flex: 1,
+        padding: 24,
+        justifyContent: 'center',
+    },
+    button: {
+        marginBottom: 16,
+    },
 });
