@@ -77,7 +77,7 @@ const updateNote = async (req, res) => {
 
         // Update allowed fields
         const updates = req.body;
-        const allowedUpdates = ['title', 'content'];
+        const allowedUpdates = ['title', 'content', 'summary'];
 
         Object.keys(updates).forEach((update) => {
             if (allowedUpdates.includes(update)) {
@@ -105,10 +105,28 @@ const deleteNote = async (req, res) => {
     }
 };
 
+// Summarize note content
+const summarizeNote = async (req, res) => {
+    try {
+        const { text } = req.body;
+        if (!text) {
+            return res.status(400).json({ message: 'Text is required for summarization' });
+        }
+
+        const { summarizeText } = require('../utils/summarizeText');
+        const summary = await summarizeText(text);
+        res.json({ summary });
+    } catch (error) {
+        console.error('Error in summarize route:', error);
+        res.status(500).json({ message: 'Failed to generate summary' });
+    }
+};
+
 module.exports = {
     getAllNotes,
     createNote,
     getNoteById,
     updateNote,
-    deleteNote
+    deleteNote,
+    summarizeNote
 };
