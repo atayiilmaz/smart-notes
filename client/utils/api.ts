@@ -1,7 +1,7 @@
 import axios from "axios";
-import { saveNoteLocally, addToSyncQueue, isOnline } from './storage';
+import { addToSyncQueue, isOnline, saveNote } from './storage';
 
-const API_URL = 'http://192.168.1.110:3000/api';
+const API_URL = 'http://192.168.43.139:3000/api';
 
 const instance = axios.create({
     baseURL: API_URL
@@ -9,13 +9,14 @@ const instance = axios.create({
 
 // --- Types ---
 export interface Note {
-    id?: string;
     _id?: string;
     title: string;
     content: string;
     summary?: string;
     isLocal?: boolean;
     isSynced?: boolean;
+    createdAt?: string;
+    updatedAt?: string;
 }
 
 export interface AuthResponse {
@@ -23,23 +24,23 @@ export interface AuthResponse {
 }
 
 // --- Auth ---
-export async function login(email: string, password: string): Promise<AuthResponse> {
+export const login = async (email: string, password: string): Promise<AuthResponse> => {
     try {
         const res = await instance.post("/auth/login", { email, password });
         return res.data;
     } catch (error) {
         throw axiosErrorToString(error, "Login failed");
     }
-}
+};
 
-export async function register(username: string, email: string, password: string): Promise<any> {
+export const register = async (username: string, email: string, password: string): Promise<any> => {
     try {
         const res = await instance.post("/auth/signup", { username, email, password });
         return res.data;
     } catch (error) {
         throw axiosErrorToString(error, "Registration failed");
     }
-}
+};
 
 // --- Notes ---
 export const getNotes = async (token: string): Promise<Note[]> => {
@@ -56,32 +57,47 @@ export const getNotes = async (token: string): Promise<Note[]> => {
         }
 
         const data = await response.json();
-        return data.data;
+        return data.data.map((note: any) => ({
+            ...note,
+            _id: note._id || note.id,
+            id: undefined
+        }));
     } catch (error) {
         console.error('Error fetching notes:', error);
         throw error;
     }
 };
 
-export async function getNoteById(id: string, token: string): Promise<Note> {
+export const getNoteById = async (id: string, token: string): Promise<Note> => {
     try {
         const res = await instance.get(`/notes/${id}`, {
             headers: { Authorization: `Bearer ${token}` }
         });
-        return res.data;
+        const note = res.data;
+        return {
+            ...note,
+            _id: note._id || note.id,
+            id: undefined
+        };
     } catch (error) {
         throw axiosErrorToString(error, "Failed to fetch note");
     }
-}
+};
 
 export const createNote = async (token: string, note: Omit<Note, '_id'>): Promise<Note> => {
     const online = await isOnline();
     
     if (!online) {
-        // Save locally and add to sync queue
-        await saveNoteLocally(note);
-        await addToSyncQueue('create', note as Note);
-        return { ...note, _id: Date.now().toString(), isLocal: true, isSynced: false };
+        const newNote = { 
+            ...note, 
+            _id: Date.now().toString(),
+            isLocal: true,
+            isSynced: false,
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString()
+        };
+        await saveNote(newNote);
+        return newNote;
     }
 
     try {
@@ -98,12 +114,20 @@ export const createNote = async (token: string, note: Omit<Note, '_id'>): Promis
             throw new Error('Failed to create note');
         }
 
-        return await response.json();
+        const createdNote = await response.json();
+        await saveNote(createdNote);
+        return createdNote;
     } catch (error) {
-        // If online creation fails, fall back to offline
-        await saveNoteLocally(note);
-        await addToSyncQueue('create', note as Note);
-        return { ...note, _id: Date.now().toString(), isLocal: true, isSynced: false };
+        const newNote = { 
+            ...note, 
+            _id: Date.now().toString(),
+            isLocal: true,
+            isSynced: false,
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString()
+        };
+        await saveNote(newNote);
+        return newNote;
     }
 };
 
@@ -111,9 +135,9 @@ export const updateNote = async (token: string, id: string, note: Partial<Note>)
     const online = await isOnline();
     
     if (!online) {
-        // Save locally and add to sync queue
-        await addToSyncQueue('update', { ...note, _id: id } as Note);
-        return { ...note, _id: id, isLocal: true, isSynced: false } as Note;
+        const updatedNote = { ...note, _id: id, isLocal: true, isSynced: false };
+        await saveNote(updatedNote as Note);
+        return updatedNote as Note;
     }
 
     try {
@@ -130,11 +154,13 @@ export const updateNote = async (token: string, id: string, note: Partial<Note>)
             throw new Error('Failed to update note');
         }
 
-        return await response.json();
+        const updatedNote = await response.json();
+        await saveNote(updatedNote);
+        return updatedNote;
     } catch (error) {
-        // If online update fails, fall back to offline
-        await addToSyncQueue('update', { ...note, _id: id } as Note);
-        return { ...note, _id: id, isLocal: true, isSynced: false } as Note;
+        const updatedNote = { ...note, _id: id, isLocal: true, isSynced: false };
+        await saveNote(updatedNote as Note);
+        return updatedNote as Note;
     }
 };
 
@@ -142,7 +168,6 @@ export const deleteNote = async (token: string, id: string): Promise<void> => {
     const online = await isOnline();
     
     if (!online) {
-        // Add to sync queue for deletion
         await addToSyncQueue('delete', { _id: id } as Note);
         return;
     }
@@ -159,18 +184,9 @@ export const deleteNote = async (token: string, id: string): Promise<void> => {
             throw new Error('Failed to delete note');
         }
     } catch (error) {
-        // If online deletion fails, fall back to offline
         await addToSyncQueue('delete', { _id: id } as Note);
     }
 };
-
-export async function saveNotes(notes: Note[]): Promise<void> {
-    try {
-        await instance.post("/notes/bulk", { notes });
-    } catch (error) {
-        throw axiosErrorToString(error, "Failed to sync notes");
-    }
-}
 
 // --- Summarization ---
 export const summarizeNote = async (token: string, text: string): Promise<{ summary: string }> => {

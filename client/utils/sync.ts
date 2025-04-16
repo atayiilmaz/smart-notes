@@ -1,6 +1,5 @@
 import { createNote, updateNote, deleteNote } from './api';
-import { getToken } from './storage';
-import { getSyncQueue, clearSyncQueue, getLocalNotes, updateLocalNote } from './storage';
+import { getToken, getAllNotes, clearSyncQueue, getSyncQueue, saveNote } from './storage';
 import { isOnline } from './storage';
 import NetInfo from '@react-native-community/netinfo';
 
@@ -33,7 +32,8 @@ export const syncNotes = async (): Promise<void> => {
                 switch (item.action) {
                     case 'create':
                         const createdNote = await createNote(token, item.note);
-                        await updateLocalNote(item.note._id!, { 
+                        await saveNote({ 
+                            ...item.note,
                             _id: createdNote._id,
                             isLocal: false,
                             isSynced: true 
@@ -41,7 +41,7 @@ export const syncNotes = async (): Promise<void> => {
                         break;
                     case 'update':
                         await updateNote(token, item.note._id!, item.note);
-                        await updateLocalNote(item.note._id!, { isSynced: true });
+                        await saveNote({ ...item.note, isSynced: true });
                         break;
                     case 'delete':
                         await deleteNote(token, item.note._id!);
