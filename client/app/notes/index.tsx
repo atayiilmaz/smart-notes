@@ -8,10 +8,12 @@ import { NoteCard } from '../../components/NoteCard';
 import { BaseButton } from '../../components/BaseButton';
 import { syncNotes } from '../../utils/sync';
 import { Ionicons } from '@expo/vector-icons';
+import { useTranslation } from 'react-i18next';
 
 export default function Notes() {
     const router = useRouter();
     const { refresh } = useLocalSearchParams<{ refresh?: string }>();
+    const { t } = useTranslation();
     const [notes, setNotes] = useState<Note[]>([]);
     const [filteredNotes, setFilteredNotes] = useState<Note[]>([]);
     const [searchQuery, setSearchQuery] = useState('');
@@ -56,7 +58,8 @@ export default function Notes() {
             setFilteredNotes(notes);
         } else {
             const filtered = notes.filter(note => 
-                note.title.toLowerCase().includes(searchQuery.toLowerCase())
+                note.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                note.content.toLowerCase().includes(searchQuery.toLowerCase())
             );
             setFilteredNotes(filtered);
         }
@@ -93,10 +96,16 @@ export default function Notes() {
             <View style={styles.header}>
                 <TextInput
                     style={styles.searchBar}
-                    placeholder="Search notes..."
+                    placeholder={t('notes.search')}
                     value={searchQuery}
                     onChangeText={setSearchQuery}
                 />
+                <TouchableOpacity
+                    onPress={() => router.push('/settings')}
+                    style={styles.settingsButton}
+                >
+                    <Ionicons name="settings-outline" size={24} color="#007AFF" />
+                </TouchableOpacity>
             </View>
 
             <FlatList
@@ -116,7 +125,7 @@ export default function Notes() {
                 ListEmptyComponent={
                     <View style={styles.emptyContainer}>
                         <BaseButton
-                            title="Create Your First Note"
+                            title={t('notes.createFirstNote')}
                             onPress={handleCreateNote}
                         />
                     </View>
@@ -140,12 +149,18 @@ const styles = StyleSheet.create({
         borderBottomWidth: 1,
         borderBottomColor: '#E5E5EA',
         padding: 16,
+        flexDirection: 'row',
+        alignItems: 'center',
     },
     searchBar: {
         height: 40,
         backgroundColor: '#F2F2F7',
         borderRadius: 8,
         paddingHorizontal: 12,
+    },
+    settingsButton: {
+        marginLeft: 8,
+        padding: 8,
     },
     loadingContainer: {
         flex: 1,

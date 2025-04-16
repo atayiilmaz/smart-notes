@@ -5,9 +5,11 @@ import { createNote, summarizeNote } from '../../utils/api';
 import { getToken } from '../../utils/storage';
 import { BaseButton } from '../../components/BaseButton';
 import { TextField } from '../../components/TextField';
+import { useTranslation } from 'react-i18next';
 
 export default function CreateNote() {
     const router = useRouter();
+    const { t } = useTranslation();
     const [title, setTitle] = useState('');
     const [content, setContent] = useState('');
     const [summary, setSummary] = useState('');
@@ -17,8 +19,8 @@ export default function CreateNote() {
 
     const validateForm = () => {
         const newErrors: { title?: string; content?: string } = {};
-        if (!title) newErrors.title = 'Title is required';
-        if (!content) newErrors.content = 'Content is required';
+        if (!title) newErrors.title = t('errors.required');
+        if (!content) newErrors.content = t('errors.required');
         setErrors(newErrors);
         return Object.keys(newErrors).length === 0;
     };
@@ -39,7 +41,7 @@ export default function CreateNote() {
                 params: { refresh: 'true' }
             });
         } catch (error: any) {
-            Alert.alert('Error', error.message || 'Failed to create note');
+            Alert.alert(t('common.error'), error.message || t('errors.unknownError'));
         } finally {
             setLoading(false);
         }
@@ -47,7 +49,7 @@ export default function CreateNote() {
 
     const handleSummarize = async () => {
         if (!content) {
-            Alert.alert('Error', 'Please enter some content first');
+            Alert.alert(t('common.error'), t('errors.required'));
             return;
         }
 
@@ -61,7 +63,7 @@ export default function CreateNote() {
             const result = await summarizeNote(token, content);
             setSummary(result.summary);
         } catch (error: any) {
-            Alert.alert('Error', error.message || 'Failed to summarize note');
+            Alert.alert(t('common.error'), error.message || t('errors.unknownError'));
         } finally {
             setSummarizing(false);
         }
@@ -71,18 +73,18 @@ export default function CreateNote() {
         <ScrollView style={styles.container}>
             <View style={styles.content}>
                 <TextField
-                    label="Title"
+                    label={t('notes.title')}
                     value={title}
                     onChangeText={setTitle}
-                    placeholder="Enter note title"
+                    placeholder={t('notes.titlePlaceholder')}
                     error={errors.title}
                 />
 
                 <TextField
-                    label="Content"
+                    label={t('notes.content')}
                     value={content}
                     onChangeText={setContent}
-                    placeholder="Enter note content"
+                    placeholder={t('notes.contentPlaceholder')}
                     multiline
                     numberOfLines={12}
                     textAlignVertical="top"
@@ -91,7 +93,7 @@ export default function CreateNote() {
                 />
 
                 <BaseButton
-                    title={summarizing ? "Summarizing..." : "Summarize with AI"}
+                    title={summarizing ? t('notes.summarizing') : t('notes.summarize')}
                     onPress={handleSummarize}
                     disabled={summarizing}
                     variant="secondary"
@@ -101,7 +103,7 @@ export default function CreateNote() {
                 {summary ? (
                     <View style={styles.summaryContainer}>
                         <TextField
-                            label="Summary"
+                            label={t('notes.summary')}
                             value={summary}
                             onChangeText={setSummary}
                             multiline
@@ -112,7 +114,7 @@ export default function CreateNote() {
                 ) : null}
 
                 <BaseButton
-                    title="Create Note"
+                    title={t('notes.create')}
                     onPress={handleCreateNote}
                     loading={loading}
                     style={styles.button}
@@ -125,20 +127,18 @@ export default function CreateNote() {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: '#fff',
+        backgroundColor: '#F2F2F7',
     },
     content: {
         padding: 16,
     },
     contentInput: {
         minHeight: 200,
-        paddingTop: 12,
-        paddingBottom: 12,
     },
     button: {
-        marginBottom: 16,
+        marginTop: 16,
     },
     summaryContainer: {
-        marginBottom: 16,
+        marginTop: 16,
     },
 }); 

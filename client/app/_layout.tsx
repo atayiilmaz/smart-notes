@@ -5,9 +5,14 @@ import { getToken, removeToken } from '../utils/storage';
 import { handleNetworkChange, syncNotes } from '../utils/sync';
 import { TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import '../utils/i18n';
+import { I18nextProvider } from 'react-i18next';
+import i18n from '../utils/i18n';
+import { useTranslation } from 'react-i18next';
 
-export default function RootLayout() {
+function RootLayoutContent() {
     const router = useRouter();
+    const { t } = useTranslation();
 
     useEffect(() => {
         const checkAuth = async () => {
@@ -39,9 +44,8 @@ export default function RootLayout() {
                 },
                 headerTintColor: '#000',
                 headerTitleStyle: {
-                    fontWeight: '600',
+                    fontWeight: 'bold',
                 },
-                headerShadowVisible: false,
             }}
         >
             <Stack.Screen
@@ -53,44 +57,47 @@ export default function RootLayout() {
             <Stack.Screen
                 name="(auth)/signIn"
                 options={{
-                    title: 'Sign In',
+                    title: t('auth.signIn'),
                 }}
             />
             <Stack.Screen
                 name="(auth)/signUp"
                 options={{
-                    title: 'Sign Up',
+                    title: t('auth.signUp'),
                 }}
             />
             <Stack.Screen
                 name="notes/index"
                 options={{
-                    title: 'All Notes',
-                    headerRight: () => (
-                        <TouchableOpacity 
-                            onPress={async () => {
-                                await removeToken();
-                                router.replace('/(auth)/signIn');
-                            }}
-                            style={{ marginRight: 16 }}
-                        >
-                            <Ionicons name="log-out-outline" size={24} color="#007AFF" />
-                        </TouchableOpacity>
-                    ),
+                    title: t('notes.title'),
                 }}
             />
             <Stack.Screen
                 name="notes/create"
                 options={{
-                    title: 'Create Note',
+                    title: t('notes.create'),
                 }}
             />
             <Stack.Screen
                 name="notes/[id]"
                 options={{
-                    title: 'Note Details',
+                    title: t('notes.edit'),
+                }}
+            />
+            <Stack.Screen
+                name="settings/index"
+                options={{
+                    title: t('settings.title'),
                 }}
             />
         </Stack>
+    );
+}
+
+export default function RootLayout() {
+    return (
+        <I18nextProvider i18n={i18n}>
+            <RootLayoutContent />
+        </I18nextProvider>
     );
 }

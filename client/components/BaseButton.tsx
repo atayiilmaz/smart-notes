@@ -1,26 +1,28 @@
 import React from 'react';
-import { View, Text, TouchableOpacity, ActivityIndicator, StyleSheet, ViewStyle, TextStyle } from 'react-native';
+import { TouchableOpacity, Text, StyleSheet, View, ActivityIndicator, ViewStyle, TextStyle } from 'react-native';
 
 interface BaseButtonProps {
     title: string;
     onPress: () => void;
     variant?: 'primary' | 'secondary' | 'outline';
-    loading?: boolean;
-    disabled?: boolean;
     style?: ViewStyle;
     textColor?: string;
+    loading?: boolean;
+    disabled?: boolean;
+    icon?: React.ReactNode;
 }
 
 export const BaseButton: React.FC<BaseButtonProps> = ({
     title,
     onPress,
     variant = 'primary',
-    loading = false,
-    disabled = false,
     style,
     textColor,
+    loading = false,
+    disabled = false,
+    icon,
 }) => {
-    const getButtonStyle = () => {
+    const getButtonStyle = (): ViewStyle => {
         switch (variant) {
             case 'secondary':
                 return styles.secondaryButton;
@@ -31,10 +33,8 @@ export const BaseButton: React.FC<BaseButtonProps> = ({
         }
     };
 
-    const getTextStyle = () => {
+    const getTextStyle = (): TextStyle => {
         switch (variant) {
-            case 'secondary':
-                return styles.secondaryText;
             case 'outline':
                 return styles.outlineText;
             default:
@@ -52,37 +52,40 @@ export const BaseButton: React.FC<BaseButtonProps> = ({
             ]}
             onPress={onPress}
             disabled={disabled || loading}
-            activeOpacity={0.7}
         >
-            {loading ? (
-                <ActivityIndicator color={variant === 'primary' ? '#fff' : '#007AFF'} />
-            ) : (
-                <Text style={[
-                    styles.text,
-                    getTextStyle(),
-                    disabled && styles.disabledText,
-                    textColor && { color: textColor }
-                ]}>
-                    {title}
-                </Text>
-            )}
+            <View style={styles.contentContainer}>
+                {icon && <View style={styles.iconContainer}>{icon}</View>}
+                {loading ? (
+                    <ActivityIndicator color={variant === 'outline' ? '#007AFF' : '#fff'} />
+                ) : (
+                    <Text
+                        style={[
+                            getTextStyle(),
+                            textColor && { color: textColor },
+                            disabled && styles.disabledText,
+                        ]}
+                    >
+                        {title}
+                    </Text>
+                )}
+            </View>
         </TouchableOpacity>
     );
 };
 
 const styles = StyleSheet.create({
     button: {
-        height: 48,
+        padding: 12,
         borderRadius: 8,
-        justifyContent: 'center',
         alignItems: 'center',
-        paddingHorizontal: 16,
+        justifyContent: 'center',
+        minHeight: 48,
     },
     primaryButton: {
         backgroundColor: '#007AFF',
     },
     secondaryButton: {
-        backgroundColor: '#F2F2F7',
+        backgroundColor: '#5856D6',
     },
     outlineButton: {
         backgroundColor: 'transparent',
@@ -92,20 +95,25 @@ const styles = StyleSheet.create({
     disabledButton: {
         opacity: 0.5,
     },
-    text: {
+    primaryText: {
+        color: '#fff',
         fontSize: 16,
         fontWeight: '600',
     },
-    primaryText: {
-        color: '#fff',
-    },
-    secondaryText: {
-        color: '#007AFF',
-    },
     outlineText: {
         color: '#007AFF',
+        fontSize: 16,
+        fontWeight: '600',
     },
     disabledText: {
-        color: '#8E8E93',
+        opacity: 0.5,
+    },
+    contentContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    iconContainer: {
+        marginRight: 8,
     },
 }); 

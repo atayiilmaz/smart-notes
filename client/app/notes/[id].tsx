@@ -8,10 +8,12 @@ import { BaseButton } from '../../components/BaseButton';
 import { TextField } from '../../components/TextField';
 import { Ionicons } from '@expo/vector-icons';
 import { Text } from 'react-native';
+import { useTranslation } from 'react-i18next';
 
 export default function NoteDetail() {
     const router = useRouter();
     const { id } = useLocalSearchParams<{ id: string }>();
+    const { t } = useTranslation();
     const [note, setNote] = useState<Note | null>(null);
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
@@ -36,7 +38,7 @@ export default function NoteDetail() {
             const fetchedNote = await getNoteById(id, token);
             setNote(fetchedNote);
         } catch (error: any) {
-            Alert.alert('Error', error.message || 'Failed to fetch note');
+            Alert.alert(t('common.error'), error.message || t('errors.unknownError'));
         } finally {
             setLoading(false);
         }
@@ -45,8 +47,8 @@ export default function NoteDetail() {
     const validateForm = () => {
         if (!note) return false;
         const newErrors: { title?: string; content?: string } = {};
-        if (!note.title) newErrors.title = 'Title is required';
-        if (!note.content) newErrors.content = 'Content is required';
+        if (!note.title) newErrors.title = t('errors.required');
+        if (!note.content) newErrors.content = t('errors.required');
         setErrors(newErrors);
         return Object.keys(newErrors).length === 0;
     };
@@ -67,9 +69,9 @@ export default function NoteDetail() {
                 summary: note.summary || '',
             });
             setNote(updatedNote);
-            Alert.alert('Success', 'Note updated successfully');
+            Alert.alert(t('common.success'), t('notes.updateSuccess'));
         } catch (error: any) {
-            Alert.alert('Error', error.message || 'Failed to update note');
+            Alert.alert(t('common.error'), error.message || t('errors.unknownError'));
         } finally {
             setSaving(false);
         }
@@ -79,12 +81,12 @@ export default function NoteDetail() {
         if (!note?._id) return;
 
         Alert.alert(
-            'Delete Note',
-            'Are you sure you want to delete this note?',
+            t('notes.delete'),
+            t('notes.deleteConfirm'),
             [
-                { text: 'Cancel', style: 'cancel' },
+                { text: t('common.cancel'), style: 'cancel' },
                 {
-                    text: 'Delete',
+                    text: t('common.confirm'),
                     style: 'destructive',
                     onPress: async () => {
                         try {
@@ -96,7 +98,7 @@ export default function NoteDetail() {
                             await deleteNote(token, note._id as string);
                             router.back();
                         } catch (error: any) {
-                            Alert.alert('Error', error.message || 'Failed to delete note');
+                            Alert.alert(t('common.error'), error.message || t('errors.unknownError'));
                         }
                     },
                 },
@@ -106,7 +108,7 @@ export default function NoteDetail() {
 
     const handleSummarize = async () => {
         if (!note?.content) {
-            Alert.alert('Error', 'Please enter some content first');
+            Alert.alert(t('common.error'), t('errors.required'));
             return;
         }
 
@@ -124,7 +126,7 @@ export default function NoteDetail() {
             });
             setNote(updatedNote);
         } catch (error: any) {
-            Alert.alert('Error', error.message || 'Failed to summarize note');
+            Alert.alert(t('common.error'), error.message || t('errors.unknownError'));
         } finally {
             setSummarizing(false);
         }
@@ -134,7 +136,7 @@ export default function NoteDetail() {
         return (
             <View style={styles.container}>
                 <View style={styles.loadingContainer}>
-                    <BaseButton title="Back" onPress={() => router.back()} variant="outline" />
+                    <BaseButton title={t('common.back')} onPress={() => router.back()} variant="outline" />
                 </View>
             </View>
         );
@@ -144,18 +146,18 @@ export default function NoteDetail() {
         <ScrollView style={styles.container}>
             <View style={styles.content}>
                 <TextField
-                    label="Title"
+                    label={t('notes.title')}
                     value={note.title}
                     onChangeText={(text) => setNote({ ...note, title: text })}
-                    placeholder="Enter note title"
+                    placeholder={t('notes.titlePlaceholder')}
                     error={errors.title}
                 />
 
                 <TextField
-                    label="Content"
+                    label={t('notes.content')}
                     value={note.content}
                     onChangeText={(text) => setNote({ ...note, content: text })}
-                    placeholder="Enter note content"
+                    placeholder={t('notes.contentPlaceholder')}
                     multiline
                     numberOfLines={12}
                     textAlignVertical="top"
@@ -164,7 +166,7 @@ export default function NoteDetail() {
                 />
 
                 <BaseButton
-                    title={summarizing ? "Summarizing..." : "Summarize with AI"}
+                    title={summarizing ? t('notes.summarizing') : t('notes.summarize')}
                     onPress={handleSummarize}
                     disabled={summarizing}
                     variant="secondary"
@@ -174,7 +176,7 @@ export default function NoteDetail() {
                 {note.summary ? (
                     <View style={styles.summaryContainer}>
                         <TextField
-                            label="Summary"
+                            label={t('notes.summary')}
                             value={note.summary}
                             onChangeText={(text) => setNote({ ...note, summary: text })}
                             multiline
@@ -185,14 +187,14 @@ export default function NoteDetail() {
                 ) : null}
 
                 <BaseButton
-                    title={saving ? "Saving..." : "Save Changes"}
+                    title={saving ? t('notes.saving') : t('notes.save')}
                     onPress={handleSave}
                     loading={saving}
                     style={styles.button}
                 />
 
                 <BaseButton
-                    title="Delete Note"
+                    title={t('notes.delete')}
                     onPress={handleDelete}
                     variant="outline"
                     style={StyleSheet.flatten([styles.button, styles.deleteButton])}
@@ -206,28 +208,26 @@ export default function NoteDetail() {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: '#fff',
+        backgroundColor: '#F2F2F7',
     },
     content: {
         padding: 16,
-    },
-    contentInput: {
-        minHeight: 200,
-        paddingTop: 12,
-        paddingBottom: 12,
-    },
-    button: {
-        marginBottom: 16,
-    },
-    deleteButton: {
-        borderColor: '#FF3B30',
-    },
-    summaryContainer: {
-        marginBottom: 16,
     },
     loadingContainer: {
         flex: 1,
         justifyContent: 'center',
         alignItems: 'center',
+    },
+    contentInput: {
+        minHeight: 200,
+    },
+    button: {
+        marginTop: 16,
+    },
+    deleteButton: {
+        borderColor: '#FF3B30',
+    },
+    summaryContainer: {
+        marginTop: 16,
     },
 }); 

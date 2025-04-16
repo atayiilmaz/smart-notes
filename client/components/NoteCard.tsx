@@ -2,6 +2,8 @@ import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ViewStyle } from 'react-native';
 import { Note } from '../utils/api';
 import { format } from 'date-fns';
+import { tr, enUS } from 'date-fns/locale';
+import { useTranslation } from 'react-i18next';
 
 interface NoteCardProps {
     note: Note;
@@ -10,8 +12,10 @@ interface NoteCardProps {
 }
 
 export const NoteCard: React.FC<NoteCardProps> = ({ note, onPress, style }) => {
+    const { t, i18n } = useTranslation();
     const date = note.updatedAt || note.createdAt;
-    const formattedDate = date ? format(new Date(date), 'MMM d, yyyy h:mm a') : '';
+    const locale = i18n.language === 'tr' ? tr : enUS;
+    const formattedDate = date ? format(new Date(date), 'MMM d, yyyy h:mm a', { locale }) : '';
 
     return (
         <TouchableOpacity
@@ -25,7 +29,7 @@ export const NoteCard: React.FC<NoteCardProps> = ({ note, onPress, style }) => {
                 </Text>
                 {note.isLocal && (
                     <View style={styles.offlineBadge}>
-                        <Text style={styles.offlineText}>Offline</Text>
+                        <Text style={styles.offlineText}>{t('common.offline')}</Text>
                     </View>
                 )}
             </View>
@@ -36,7 +40,7 @@ export const NoteCard: React.FC<NoteCardProps> = ({ note, onPress, style }) => {
 
             {note.summary && (
                 <View style={styles.summaryContainer}>
-                    <Text style={styles.summaryLabel}>Summary:</Text>
+                    <Text style={styles.summaryLabel}>{t('notes.summary')}:</Text>
                     <Text style={styles.summaryText} numberOfLines={2}>
                         {note.summary}
                     </Text>
@@ -45,7 +49,7 @@ export const NoteCard: React.FC<NoteCardProps> = ({ note, onPress, style }) => {
 
             {formattedDate && (
                 <View style={styles.dateContainer}>
-                    <Text style={styles.dateLabel}>Created:</Text>
+                    <Text style={styles.dateLabel}>{t('notes.created')}:</Text>
                     <Text style={styles.date}>{formattedDate}</Text>
                 </View>
             )}
