@@ -9,10 +9,11 @@ const summarizeContent = async (req, res) => {
             return res.status(400).json({ message: 'Text is required' });
         }
 
-        const summary = summarizeText(text);
+        const summary = await summarizeText(text);
         res.json({ summary });
     } catch (error) {
-        res.status(500).json({ message: error.message });
+        console.error('Error in summarizeContent:', error);
+        res.status(500).json({ message: error.message || 'Failed to summarize text' });
     }
 };
 
