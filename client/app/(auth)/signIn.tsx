@@ -3,7 +3,7 @@ import { View, StyleSheet, Alert } from 'react-native';
 import { useRouter } from 'expo-router';
 import { login } from '../../utils/api';
 import { saveToken } from '../../utils/storage';
-import { Button } from '../../components/Button';
+import { BaseButton } from '../../components/BaseButton';
 import { TextField } from '../../components/TextField';
 
 export default function SignIn() {
@@ -58,14 +58,14 @@ export default function SignIn() {
                     error={errors.password}
                 />
 
-                <Button
+                <BaseButton
                     title="Sign In"
                     onPress={handleSignIn}
                     loading={loading}
                     style={styles.button}
                 />
 
-                <Button
+                <BaseButton
                     title="Don't have an account? Sign Up"
                     onPress={() => router.push('/(auth)/signUp')}
                     variant="outline"

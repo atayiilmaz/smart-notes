@@ -1,8 +1,8 @@
 import { Stack } from "expo-router";
 import { useEffect } from 'react';
 import { useRouter } from 'expo-router';
-import { getToken } from '../utils/storage';
-import { handleNetworkChange } from '../utils/sync';
+import { getToken, removeToken } from '../utils/storage';
+import { handleNetworkChange, syncNotes } from '../utils/sync';
 import { TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
@@ -18,6 +18,7 @@ export default function RootLayout() {
         };
 
         checkAuth();
+        handleNetworkChange(syncNotes);
     }, []);
 
     useEffect(() => {
@@ -29,12 +30,6 @@ export default function RootLayout() {
 
         return () => unsubscribe();
     }, []);
-
-    const handleSignOut = async () => {
-        const { removeToken } = require('../utils/storage');
-        await removeToken();
-        router.replace('/(auth)/signIn');
-    };
 
     return (
         <Stack
@@ -49,6 +44,12 @@ export default function RootLayout() {
                 headerShadowVisible: false,
             }}
         >
+            <Stack.Screen
+                name="index"
+                options={{
+                    headerShown: false,
+                }}
+            />
             <Stack.Screen
                 name="(auth)/signIn"
                 options={{
@@ -67,7 +68,10 @@ export default function RootLayout() {
                     title: 'All Notes',
                     headerRight: () => (
                         <TouchableOpacity 
-                            onPress={handleSignOut}
+                            onPress={async () => {
+                                await removeToken();
+                                router.replace('/(auth)/signIn');
+                            }}
                             style={{ marginRight: 16 }}
                         >
                             <Ionicons name="log-out-outline" size={24} color="#007AFF" />
@@ -85,6 +89,12 @@ export default function RootLayout() {
                 name="notes/[id]"
                 options={{
                     title: 'Note Details',
+                }}
+            />
+            <Stack.Screen
+                name="settings/index"
+                options={{
+                    title: 'Settings',
                 }}
             />
         </Stack>

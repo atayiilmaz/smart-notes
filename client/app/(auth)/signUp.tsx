@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { View, StyleSheet, Alert } from 'react-native';
 import { useRouter } from 'expo-router';
 import { register } from '../../utils/api';
-import { Button } from '../../components/Button';
+import { BaseButton } from '../../components/BaseButton';
 import { TextField } from '../../components/TextField';
 
 export default function SignUp() {
@@ -77,14 +77,14 @@ export default function SignUp() {
                     error={errors.password}
                 />
 
-                <Button
+                <BaseButton
                     title="Sign Up"
                     onPress={handleSignUp}
                     loading={loading}
                     style={styles.button}
                 />
 
-                <Button
+                <BaseButton
                     title="Already have an account? Sign In"
                     onPress={() => router.push('/(auth)/signIn')}
                     variant="outline"

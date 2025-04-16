@@ -1,11 +1,11 @@
 import React, { useEffect, useState } from 'react';
-import { View, StyleSheet, FlatList, RefreshControl, TextInput, TouchableOpacity, Text } from 'react-native';
+import { View, StyleSheet, FlatList, RefreshControl, TextInput, TouchableOpacity } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Note } from '../../utils/api';
-import { getToken, removeToken } from '../../utils/storage';
+import { getToken } from '../../utils/storage';
 import { getNotes } from '../../utils/api';
 import { NoteCard } from '../../components/NoteCard';
-import { BaseButton } from '../../components/Button';
+import { BaseButton } from '../../components/BaseButton';
 import { syncNotes } from '../../utils/sync';
 import { Ionicons } from '@expo/vector-icons';
 
@@ -58,11 +58,6 @@ export default function Notes() {
         await fetchNotes();
     };
 
-    const handleSignOut = async () => {
-        await removeToken();
-        router.replace('/(auth)/signIn');
-    };
-
     const handleNotePress = (note: Note) => {
         if (note._id) {
             router.push(`/notes/${note._id}` as any);
@@ -77,12 +72,7 @@ export default function Notes() {
         return (
             <View style={styles.container}>
                 <View style={styles.loadingContainer}>
-                    <BaseButton
-                        title="Sign Out"
-                        onPress={handleSignOut}
-                        variant="outline"
-                        style={styles.signOutButton}
-                    />
+                    <Ionicons name="refresh" size={24} color="#007AFF" />
                 </View>
             </View>
         );
@@ -108,7 +98,7 @@ export default function Notes() {
                         style={styles.noteCard}
                     />
                 )}
-                keyExtractor={(item) => item._id || item.id || Math.random().toString()}
+                keyExtractor={(item) => item._id || Math.random().toString()}
                 contentContainerStyle={styles.listContent}
                 refreshControl={
                     <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
@@ -182,8 +172,5 @@ const styles = StyleSheet.create({
         },
         shadowOpacity: 0.25,
         shadowRadius: 3.84,
-    },
-    signOutButton: {
-        // Add appropriate styles for the sign out button
     },
 });

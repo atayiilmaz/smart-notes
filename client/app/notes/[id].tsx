@@ -4,7 +4,7 @@ import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Note } from '../../utils/api';
 import { getToken } from '../../utils/storage';
 import { getNoteById, updateNote, deleteNote, summarizeNote } from '../../utils/api';
-import { BaseButton } from '../../components/Button';
+import { BaseButton } from '../../components/BaseButton';
 import { TextField } from '../../components/TextField';
 import { Ionicons } from '@expo/vector-icons';
 import { Text } from 'react-native';
@@ -191,6 +191,7 @@ export default function NoteDetail() {
                     onPress={handleDelete}
                     variant="outline"
                     style={StyleSheet.flatten([styles.button, styles.deleteButton])}
+                    textColor="#FF3B30"
                 />
             </View>
         </ScrollView>

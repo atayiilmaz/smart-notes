@@ -3,7 +3,7 @@ import { View, StyleSheet, ScrollView, Alert } from 'react-native';
 import { useRouter } from 'expo-router';
 import { createNote, summarizeNote } from '../../utils/api';
 import { getToken } from '../../utils/storage';
-import { BaseButton } from '../../components/Button';
+import { BaseButton } from '../../components/BaseButton';
 import { TextField } from '../../components/TextField';
 
 export default function CreateNote() {
