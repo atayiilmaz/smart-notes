@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, StyleSheet, Alert } from 'react-native';
+import { View, StyleSheet, Alert, Text } from 'react-native';
 import { useRouter } from 'expo-router';
 import { login } from '../../utils/api';
 import { saveToken } from '../../utils/storage';
@@ -38,6 +38,9 @@ export default function SignIn() {
 
     return (
         <View style={styles.container}>
+            <View style={styles.header}>
+                <Text style={styles.headerText}>Smart Notes</Text>
+            </View>
             <View style={styles.content}>
                 <TextField
                     label="Email"
@@ -79,6 +82,16 @@ const styles = StyleSheet.create({
     container: {
         flex: 1,
         backgroundColor: '#fff',
+    },
+    header: {
+        paddingTop: 60,
+        paddingBottom: 20,
+        alignItems: 'center',
+    },
+    headerText: {
+        fontSize: 28,
+        fontWeight: 'bold',
+        color: '#007AFF',
     },
     content: {
         flex: 1,
