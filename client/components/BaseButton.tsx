@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, TouchableOpacity, ActivityIndicator, StyleSheet, ViewStyle } from 'react-native';
+import { View, Text, TouchableOpacity, ActivityIndicator, StyleSheet, ViewStyle, TextStyle } from 'react-native';
 
 interface BaseButtonProps {
     title: string;
@@ -8,6 +8,7 @@ interface BaseButtonProps {
     loading?: boolean;
     disabled?: boolean;
     style?: ViewStyle;
+    textColor?: string;
 }
 
 export const BaseButton: React.FC<BaseButtonProps> = ({
@@ -17,6 +18,7 @@ export const BaseButton: React.FC<BaseButtonProps> = ({
     loading = false,
     disabled = false,
     style,
+    textColor,
 }) => {
     const getButtonStyle = () => {
         switch (variant) {
@@ -55,7 +57,12 @@ export const BaseButton: React.FC<BaseButtonProps> = ({
             {loading ? (
                 <ActivityIndicator color={variant === 'primary' ? '#fff' : '#007AFF'} />
             ) : (
-                <Text style={[styles.text, getTextStyle(), disabled && styles.disabledText]}>
+                <Text style={[
+                    styles.text,
+                    getTextStyle(),
+                    disabled && styles.disabledText,
+                    textColor && { color: textColor }
+                ]}>
                     {title}
                 </Text>
             )}

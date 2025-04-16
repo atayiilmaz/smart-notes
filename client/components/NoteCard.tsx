@@ -10,9 +10,9 @@ interface NoteCardProps {
 }
 
 export const NoteCard: React.FC<NoteCardProps> = ({ note, onPress, style }) => {
-    const date = note.updatedAt ? new Date(note.updatedAt) : new Date(note.createdAt);
-    const dateLabel = note.updatedAt ? 'Modified' : 'Created';
-    
+    const date = note.updatedAt || note.createdAt;
+    const formattedDate = date ? format(new Date(date), 'MMM d, yyyy h:mm a') : '';
+
     return (
         <TouchableOpacity
             style={[styles.container, style]}
@@ -43,12 +43,12 @@ export const NoteCard: React.FC<NoteCardProps> = ({ note, onPress, style }) => {
                 </View>
             )}
 
-            <View style={styles.dateContainer}>
-                <Text style={styles.dateLabel}>{dateLabel}:</Text>
-                <Text style={styles.date}>
-                    {format(date, 'MMM d, yyyy h:mm a')}
-                </Text>
-            </View>
+            {formattedDate && (
+                <View style={styles.dateContainer}>
+                    <Text style={styles.dateLabel}>Created:</Text>
+                    <Text style={styles.date}>{formattedDate}</Text>
+                </View>
+            )}
         </TouchableOpacity>
     );
 };
