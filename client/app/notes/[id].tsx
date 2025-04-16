@@ -61,11 +61,12 @@ export default function NoteDetail() {
                 router.replace('/(auth)/signIn');
                 return;
             }
-            await updateNote(token, note._id, {
+            const updatedNote = await updateNote(token, note._id, {
                 title: note.title,
                 content: note.content,
-                summary: note.summary,
+                summary: note.summary || '',
             });
+            setNote(updatedNote);
             Alert.alert('Success', 'Note updated successfully');
         } catch (error: any) {
             Alert.alert('Error', error.message || 'Failed to update note');
@@ -117,7 +118,11 @@ export default function NoteDetail() {
                 return;
             }
             const result = await summarizeNote(token, note.content);
-            setNote({ ...note, summary: result.summary });
+            const updatedNote = await updateNote(token, note._id!, {
+                ...note,
+                summary: result.summary
+            });
+            setNote(updatedNote);
         } catch (error: any) {
             Alert.alert('Error', error.message || 'Failed to summarize note');
         } finally {

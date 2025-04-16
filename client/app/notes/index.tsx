@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { View, StyleSheet, FlatList, RefreshControl, TextInput, TouchableOpacity } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useRouter, useLocalSearchParams, useFocusEffect } from 'expo-router';
 import { Note } from '../../utils/api';
 import { getToken } from '../../utils/storage';
 import { getNotes } from '../../utils/api';
@@ -11,6 +11,7 @@ import { Ionicons } from '@expo/vector-icons';
 
 export default function Notes() {
     const router = useRouter();
+    const { refresh } = useLocalSearchParams<{ refresh?: string }>();
     const [notes, setNotes] = useState<Note[]>([]);
     const [filteredNotes, setFilteredNotes] = useState<Note[]>([]);
     const [searchQuery, setSearchQuery] = useState('');
@@ -37,9 +38,18 @@ export default function Notes() {
         }
     };
 
+    useFocusEffect(
+        React.useCallback(() => {
+            fetchNotes();
+        }, [])
+    );
+
     useEffect(() => {
-        fetchNotes();
-    }, []);
+        if (refresh === 'true') {
+            fetchNotes();
+            router.setParams({ refresh: undefined });
+        }
+    }, [refresh]);
 
     useEffect(() => {
         if (searchQuery.trim() === '') {

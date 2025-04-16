@@ -1,0 +1,7 @@
+{
+  "dependencies": {
+    "@react-native-picker/picker": "^2.11.0",
+    "i18next": "^25.0.0",
+    "react-i18next": "^15.4.1"
+  }
+}

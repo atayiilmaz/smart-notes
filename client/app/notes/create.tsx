@@ -34,7 +34,10 @@ export default function CreateNote() {
                 return;
             }
             await createNote(token, { title, content, summary });
-            router.back();
+            router.replace({
+                pathname: '/notes',
+                params: { refresh: 'true' }
+            });
         } catch (error: any) {
             Alert.alert('Error', error.message || 'Failed to create note');
         } finally {

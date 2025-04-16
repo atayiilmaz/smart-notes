@@ -155,8 +155,14 @@ export const updateNote = async (token: string, id: string, note: Partial<Note>)
         }
 
         const updatedNote = await response.json();
-        await saveNote(updatedNote);
-        return updatedNote;
+        const formattedNote = {
+            ...updatedNote,
+            _id: updatedNote._id || updatedNote.id,
+            id: undefined,
+            summary: updatedNote.summary || note.summary || '' // Ensure summary is preserved
+        };
+        await saveNote(formattedNote);
+        return formattedNote;
     } catch (error) {
         const updatedNote = { ...note, _id: id, isLocal: true, isSynced: false };
         await saveNote(updatedNote as Note);

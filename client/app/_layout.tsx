@@ -91,12 +91,6 @@ export default function RootLayout() {
                     title: 'Note Details',
                 }}
             />
-            <Stack.Screen
-                name="settings/index"
-                options={{
-                    title: 'Settings',
-                }}
-            />
         </Stack>
     );
 }
