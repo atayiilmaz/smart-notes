@@ -1,5 +1,5 @@
 import axios from "axios";
-import { addToSyncQueue, isOnline, saveNote } from './storage';
+import { addToSyncQueue, isOnline, saveNote, getAllNotes, getNote } from './storage';
 
 const API_URL = 'http://192.168.1.110:3000/api';
 
@@ -44,6 +44,12 @@ export const register = async (username: string, email: string, password: string
 
 // --- Notes ---
 export const getNotes = async (token: string): Promise<Note[]> => {
+    const online = await isOnline();
+    
+    if (!online) {
+        return getAllNotes();
+    }
+
     try {
         const response = await fetch(`${API_URL}/notes`, {
             headers: {
@@ -57,30 +63,57 @@ export const getNotes = async (token: string): Promise<Note[]> => {
         }
 
         const data = await response.json();
-        return data.data.map((note: any) => ({
+        const notes = data.data.map((note: any) => ({
             ...note,
             _id: note._id || note.id,
-            id: undefined
+            id: undefined,
+            isLocal: false,
+            isSynced: true
         }));
+
+        // Save fetched notes to local storage
+        for (const note of notes) {
+            await saveNote(note);
+        }
+
+        return notes;
     } catch (error) {
         console.error('Error fetching notes:', error);
-        throw error;
+        // Return local notes if API request fails
+        return getAllNotes();
     }
 };
 
 export const getNoteById = async (id: string, token: string): Promise<Note> => {
+    const online = await isOnline();
+    
+    if (!online) {
+        const localNote = await getNote(id);
+        if (!localNote) {
+            throw new Error('Note not found in local storage');
+        }
+        return localNote;
+    }
+
     try {
         const res = await instance.get(`/notes/${id}`, {
             headers: { Authorization: `Bearer ${token}` }
         });
-        const note = res.data;
-        return {
-            ...note,
-            _id: note._id || note.id,
-            id: undefined
+        const note = {
+            ...res.data,
+            _id: res.data._id || res.data.id,
+            id: undefined,
+            isLocal: false,
+            isSynced: true
         };
+        await saveNote(note);
+        return note;
     } catch (error) {
-        throw axiosErrorToString(error, "Failed to fetch note");
+        const localNote = await getNote(id);
+        if (!localNote) {
+            throw axiosErrorToString(error, "Failed to fetch note");
+        }
+        return localNote;
     }
 };
 
@@ -115,8 +148,15 @@ export const createNote = async (token: string, note: Omit<Note, '_id'>): Promis
         }
 
         const createdNote = await response.json();
-        await saveNote(createdNote);
-        return createdNote;
+        const formattedNote = {
+            ...createdNote,
+            _id: createdNote._id || createdNote.id,
+            id: undefined,
+            isLocal: false,
+            isSynced: true
+        };
+        await saveNote(formattedNote);
+        return formattedNote;
     } catch (error) {
         const newNote = { 
             ...note, 
@@ -159,7 +199,9 @@ export const updateNote = async (token: string, id: string, note: Partial<Note>)
             ...updatedNote,
             _id: updatedNote._id || updatedNote.id,
             id: undefined,
-            summary: updatedNote.summary || note.summary || '' // Ensure summary is preserved
+            isLocal: false,
+            isSynced: true,
+            summary: updatedNote.summary || note.summary || ''
         };
         await saveNote(formattedNote);
         return formattedNote;

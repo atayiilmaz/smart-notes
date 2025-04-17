@@ -6,7 +6,7 @@ import NetInfo from '@react-native-community/netinfo';
 /**
  * Sync local notes with backend when online.
  * - Pulls latest notes from backend and updates local cache.
- * - Optionally, you can push local changes to backend (advanced: conflict resolution).
+ * - Optionally, you can push local changes to backend
  */
 export const syncNotes = async (): Promise<void> => {
     try {
