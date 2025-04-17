@@ -1,7 +1,7 @@
 import axios from "axios";
 import { addToSyncQueue, isOnline, saveNote, getAllNotes, getNote } from './storage';
 
-const API_URL = 'http://192.168.1.110:3000/api';
+const API_URL = 'http://localhost:3000/api';
 
 const instance = axios.create({
     baseURL: API_URL
