@@ -14,8 +14,6 @@ Ps: made it for case study so use it for educational purposes!!
 ### Technical Features
 - Offline-first architecture
 - Real-time network status detection
-- Automatic background syncing
-- Responsive UI design
 - Type-safe development with TypeScript
 - Modern React Native with Expo
 - RESTful API backend
@@ -59,7 +57,11 @@ cp .env.example .env
 # Make sure you have updated the secret keys!!!
 ```
 
-3. Install dependencies:
+3. Check API url in client/utils/api.ts!
+The api url may include your LAN ip!!, it depends on your environment but you can change localhost to your LAN ip.
+- http://localhost:3000/api # default =>  http://192.168.x.x:3000/api # use it if it does not work 
+
+4. Install dependencies:
 ```bash
 # Install client dependencies
 cd client
@@ -70,13 +72,13 @@ cd ../server
 npm install
 ```
 
-4. Set up environment variables:
+5. Set up environment variables:
 ```bash
 # Create .env file in server directory
 cp .env.example .env
 ```
 
-5. Start the development servers:
+6. Start the development servers:
 ```bash
 # Start the backend server
 cd server
