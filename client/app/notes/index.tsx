@@ -151,15 +151,17 @@ const styles = StyleSheet.create({
         padding: 16,
         flexDirection: 'row',
         alignItems: 'center',
+        justifyContent: 'space-between',
     },
     searchBar: {
         height: 40,
         backgroundColor: '#F2F2F7',
         borderRadius: 8,
         paddingHorizontal: 12,
+        flex: 1,
+        marginRight: 8,
     },
     settingsButton: {
-        marginLeft: 8,
         padding: 8,
     },
     loadingContainer: {

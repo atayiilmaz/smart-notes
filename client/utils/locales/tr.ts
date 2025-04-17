@@ -5,11 +5,13 @@ export default {
         signUp: 'Kayıt Ol',
         email: 'E-posta',
         password: 'Şifre',
+        username: 'Kullanıcı Adı',
         confirmPassword: 'Şifreyi Onayla',
         noAccount: 'Hesabınız yok mu?',
         haveAccount: 'Zaten hesabınız var mı?',
         signInHere: 'Giriş yapın',
         signUpHere: 'Kayıt olun',
+        signUpSuccess: 'Hesap oluşturuldu! Lütfen giriş yapın.',
     },
 
     // Notes

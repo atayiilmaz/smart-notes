@@ -5,9 +5,11 @@ import { login } from '../../utils/api';
 import { saveToken } from '../../utils/storage';
 import { BaseButton } from '../../components/BaseButton';
 import { TextField } from '../../components/TextField';
+import { useTranslation } from 'react-i18next';
 
 export default function SignIn() {
     const router = useRouter();
+    const { t } = useTranslation();
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [loading, setLoading] = useState(false);
@@ -15,8 +17,8 @@ export default function SignIn() {
 
     const validateForm = () => {
         const newErrors: { email?: string; password?: string } = {};
-        if (!email) newErrors.email = 'Email is required';
-        if (!password) newErrors.password = 'Password is required';
+        if (!email) newErrors.email = t('errors.required');
+        if (!password) newErrors.password = t('errors.required');
         setErrors(newErrors);
         return Object.keys(newErrors).length === 0;
     };
@@ -30,7 +32,7 @@ export default function SignIn() {
             await saveToken(res.token);
             router.replace('/notes');
         } catch (e: any) {
-            Alert.alert('Sign In Failed', e.message || 'Invalid credentials');
+            Alert.alert(t('common.error'), e.message || t('errors.unknownError'));
         } finally {
             setLoading(false);
         }
@@ -43,33 +45,33 @@ export default function SignIn() {
             </View>
             <View style={styles.content}>
                 <TextField
-                    label="Email"
+                    label={t('auth.email')}
                     value={email}
                     onChangeText={setEmail}
-                    placeholder="Enter your email"
+                    placeholder={t('auth.email')}
                     keyboardType="email-address"
                     autoCapitalize="none"
                     error={errors.email}
                 />
 
                 <TextField
-                    label="Password"
+                    label={t('auth.password')}
                     value={password}
                     onChangeText={setPassword}
-                    placeholder="Enter your password"
+                    placeholder={t('auth.password')}
                     secureTextEntry
                     error={errors.password}
                 />
 
                 <BaseButton
-                    title="Sign In"
+                    title={t('auth.signIn')}
                     onPress={handleSignIn}
                     loading={loading}
                     style={styles.button}
                 />
 
                 <BaseButton
-                    title="Don't have an account? Sign Up"
+                    title={t('auth.noAccount')}
                     onPress={() => router.push('/(auth)/signUp')}
                     variant="outline"
                 />

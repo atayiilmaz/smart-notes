@@ -5,11 +5,13 @@ export default {
         signUp: 'Sign Up',
         email: 'Email',
         password: 'Password',
+        username: 'Username',
         confirmPassword: 'Confirm Password',
         noAccount: "Don't have an account?",
         haveAccount: 'Already have an account?',
         signInHere: 'Sign in here',
         signUpHere: 'Sign up here',
+        signUpSuccess: 'Account created! Please sign in.',
     },
 
     // Notes

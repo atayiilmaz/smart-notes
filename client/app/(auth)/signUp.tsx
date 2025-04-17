@@ -4,9 +4,11 @@ import { useRouter } from 'expo-router';
 import { register } from '../../utils/api';
 import { BaseButton } from '../../components/BaseButton';
 import { TextField } from '../../components/TextField';
+import { useTranslation } from 'react-i18next';
 
 export default function SignUp() {
     const router = useRouter();
+    const { t } = useTranslation();
     const [username, setUsername] = useState('');
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
@@ -23,10 +25,10 @@ export default function SignUp() {
             email?: string;
             password?: string;
         } = {};
-        if (!username) newErrors.username = 'Username is required';
-        if (!email) newErrors.email = 'Email is required';
-        if (!password) newErrors.password = 'Password is required';
-        if (password.length < 6) newErrors.password = 'Password must be at least 6 characters';
+        if (!username) newErrors.username = t('errors.required');
+        if (!email) newErrors.email = t('errors.required');
+        if (!password) newErrors.password = t('errors.required');
+        if (password.length < 6) newErrors.password = t('errors.passwordLength');
         setErrors(newErrors);
         return Object.keys(newErrors).length === 0;
     };
@@ -37,10 +39,10 @@ export default function SignUp() {
         setLoading(true);
         try {
             await register(username, email, password);
-            Alert.alert('Success', 'Account created! Please sign in.');
+            Alert.alert(t('common.success'), t('auth.signUpSuccess'));
             router.replace('/(auth)/signIn');
         } catch (e: any) {
-            Alert.alert('Sign Up Failed', e.message || 'Registration error');
+            Alert.alert(t('common.error'), e.message || t('errors.unknownError'));
         } finally {
             setLoading(false);
         }
@@ -53,42 +55,42 @@ export default function SignUp() {
             </View>
             <View style={styles.content}>
                 <TextField
-                    label="Username"
+                    label={t('auth.username')}
                     value={username}
                     onChangeText={setUsername}
-                    placeholder="Enter your username"
+                    placeholder={t('auth.username')}
                     autoCapitalize="none"
                     error={errors.username}
                 />
 
                 <TextField
-                    label="Email"
+                    label={t('auth.email')}
                     value={email}
                     onChangeText={setEmail}
-                    placeholder="Enter your email"
+                    placeholder={t('auth.email')}
                     keyboardType="email-address"
                     autoCapitalize="none"
                     error={errors.email}
                 />
 
                 <TextField
-                    label="Password"
+                    label={t('auth.password')}
                     value={password}
                     onChangeText={setPassword}
-                    placeholder="Enter your password"
+                    placeholder={t('auth.password')}
                     secureTextEntry
                     error={errors.password}
                 />
 
                 <BaseButton
-                    title="Sign Up"
+                    title={t('auth.signUp')}
                     onPress={handleSignUp}
                     loading={loading}
                     style={styles.button}
                 />
 
                 <BaseButton
-                    title="Already have an account? Sign In"
+                    title={t('auth.haveAccount')}
                     onPress={() => router.push('/(auth)/signIn')}
                     variant="outline"
                 />
