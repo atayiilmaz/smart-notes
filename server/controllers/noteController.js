@@ -24,7 +24,7 @@ const getAllNotes = async (req, res) => {
         const hasNextPage = page < totalPages;
         const hasPrevPage = page > 1;
 
-        res.json({
+        res.status(200).json({
             data: notes,
             pagination: {
                 currentPage: page,
@@ -61,7 +61,7 @@ const getNoteById = async (req, res) => {
         if (!note) {
             return res.status(404).json({ message: 'Note not found' });
         }
-        res.json(note);
+        res.status(200).json(note);
     } catch (error) {
         res.status(500).json({ message: error.message });
     }
@@ -86,7 +86,7 @@ const updateNote = async (req, res) => {
         });
 
         await note.save();
-        res.json(note);
+        res.status(200).json(note);
     } catch (error) {
         res.status(400).json({ message: error.message });
     }
@@ -99,26 +99,9 @@ const deleteNote = async (req, res) => {
         if (!note) {
             return res.status(404).json({ message: 'Note not found' });
         }
-        res.json({ message: 'Note deleted successfully' });
+        res.status(200).json({ message: 'Note deleted successfully' });
     } catch (error) {
         res.status(500).json({ message: error.message });
-    }
-};
-
-// Summarize note content
-const summarizeNote = async (req, res) => {
-    try {
-        const { text } = req.body;
-        if (!text) {
-            return res.status(400).json({ message: 'Text is required for summarization' });
-        }
-
-        const { summarizeText } = require('../utils/summarizeText');
-        const summary = await summarizeText(text);
-        res.json({ summary });
-    } catch (error) {
-        console.error('Error in summarize route:', error);
-        res.status(500).json({ message: 'Failed to generate summary' });
     }
 };
 
@@ -128,5 +111,4 @@ module.exports = {
     getNoteById,
     updateNote,
     deleteNote,
-    summarizeNote
 };

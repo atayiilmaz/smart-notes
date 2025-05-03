@@ -165,7 +165,4 @@ router.route('/:id')
     .patch(noteController.updateNote)
     .delete(noteController.deleteNote);
 
-// Summarize note content
-router.post('/summarize', noteController.summarizeNote);
-
 module.exports = router;
