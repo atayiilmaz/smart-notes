@@ -16,7 +16,7 @@ const resources = {
 const LANG_CODES = Object.keys(resources);
 
 const LANGUAGE_DETECTOR = {
-    type: 'languageDetector',
+    type: 'languageDetector' as const,
     async: true,
     detect: async (callback: (lng: string) => void) => {
         try {
@@ -47,7 +47,7 @@ i18n
     .init({
         resources,
         fallbackLng: 'en',
-        compatibilityJSON: 'v3',
+        compatibilityJSON: 'v4',
         interpolation: {
             escapeValue: false,
         },

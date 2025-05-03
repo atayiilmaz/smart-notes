@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { View, StyleSheet, ScrollView, Alert, TouchableOpacity } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Note } from '../../utils/api';
-import { getToken } from '../../utils/storage';
+import { getToken, isOnline } from '../../utils/storage';
 import { getNoteById, updateNote, deleteNote, summarizeNote } from '../../utils/api';
 import { BaseButton } from '../../components/BaseButton';
 import { TextField } from '../../components/TextField';
@@ -19,12 +19,20 @@ export default function NoteDetail() {
     const [saving, setSaving] = useState(false);
     const [summarizing, setSummarizing] = useState(false);
     const [errors, setErrors] = useState<{ title?: string; content?: string }>({});
+    const [isConnected, setIsConnected] = useState(true);
 
     useEffect(() => {
         if (id) {
             fetchNote();
         }
+        // Network durumunu kontrol et
+        checkConnection();
     }, [id]);
+
+    const checkConnection = async () => {
+        const connected = await isOnline();
+        setIsConnected(connected);
+    };
 
     const fetchNote = async () => {
         if (!id) return;
@@ -69,7 +77,11 @@ export default function NoteDetail() {
                 summary: note.summary || '',
             });
             setNote(updatedNote);
-            Alert.alert(t('common.success'), t('notes.updateSuccess'));
+            if (isConnected) {
+                Alert.alert(t('common.success'), t('notes.updateSuccess'));
+            } else {
+                Alert.alert(t('common.success'), t('notes.updateSuccessOffline'));
+            }
         } catch (error: any) {
             Alert.alert(t('common.error'), error.message || t('errors.unknownError'));
         } finally {
@@ -112,6 +124,11 @@ export default function NoteDetail() {
             return;
         }
 
+        if (!isConnected) {
+            Alert.alert(t('common.error'), t('errors.offlineSummarize'));
+            return;
+        }
+
         setSummarizing(true);
         try {
             const token = await getToken();
@@ -145,6 +162,12 @@ export default function NoteDetail() {
     return (
         <ScrollView style={styles.container}>
             <View style={styles.content}>
+                {!isConnected && (
+                    <View style={styles.offlineBanner}>
+                        <Text style={styles.offlineText}>{t('common.offlineMode')}</Text>
+                    </View>
+                )}
+
                 <TextField
                     label={t('notes.title')}
                     value={note.title}
@@ -168,7 +191,7 @@ export default function NoteDetail() {
                 <BaseButton
                     title={summarizing ? t('notes.summarizing') : t('notes.summarize')}
                     onPress={handleSummarize}
-                    disabled={summarizing}
+                    disabled={summarizing || !isConnected}
                     variant="secondary"
                     style={styles.button}
                 />
@@ -229,5 +252,15 @@ const styles = StyleSheet.create({
     },
     summaryContainer: {
         marginTop: 16,
+    },
+    offlineBanner: {
+        backgroundColor: '#FFD700',
+        padding: 8,
+        borderRadius: 8,
+        marginBottom: 16,
+    },
+    offlineText: {
+        color: '#000',
+        textAlign: 'center',
     },
 }); 

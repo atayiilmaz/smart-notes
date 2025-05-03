@@ -1,54 +1,69 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, StyleSheet, ScrollView, Alert } from 'react-native';
 import { useRouter } from 'expo-router';
-import { createNote, summarizeNote } from '../../utils/api';
-import { getToken } from '../../utils/storage';
+import { createNote, summarizeNote, Note } from '../../utils/api';
+import { getToken, isOnline } from '../../utils/storage';
 import { BaseButton } from '../../components/BaseButton';
 import { TextField } from '../../components/TextField';
+import { Text } from 'react-native';
 import { useTranslation } from 'react-i18next';
 
 export default function CreateNote() {
     const router = useRouter();
     const { t } = useTranslation();
-    const [title, setTitle] = useState('');
-    const [content, setContent] = useState('');
+    const [note, setNote] = useState<Partial<Note>>({ title: '', content: '' });
     const [summary, setSummary] = useState('');
-    const [loading, setLoading] = useState(false);
+    const [saving, setSaving] = useState(false);
     const [summarizing, setSummarizing] = useState(false);
     const [errors, setErrors] = useState<{ title?: string; content?: string }>({});
+    const [isConnected, setIsConnected] = useState(true);
+
+    useEffect(() => {
+        checkConnection();
+    }, []);
+
+    const checkConnection = async () => {
+        const connected = await isOnline();
+        setIsConnected(connected);
+    };
 
     const validateForm = () => {
         const newErrors: { title?: string; content?: string } = {};
-        if (!title) newErrors.title = t('errors.required');
-        if (!content) newErrors.content = t('errors.required');
+        if (!note.title) newErrors.title = t('errors.required');
+        if (!note.content) newErrors.content = t('errors.required');
         setErrors(newErrors);
         return Object.keys(newErrors).length === 0;
     };
 
-    const handleCreateNote = async () => {
+    const handleSave = async () => {
         if (!validateForm()) return;
 
-        setLoading(true);
+        setSaving(true);
         try {
             const token = await getToken();
             if (!token) {
                 router.replace('/(auth)/signIn');
                 return;
             }
-            await createNote(token, { title, content, summary });
-            router.replace({
-                pathname: '/notes',
-                params: { refresh: 'true' }
+            const createdNote = await createNote(token, {
+                title: note.title || '',
+                content: note.content || '',
             });
+            if (isConnected) {
+                Alert.alert(t('common.success'), t('notes.createSuccess'));
+            } else {
+                Alert.alert(t('common.success'), t('notes.createSuccessOffline'));
+            }
+            router.back();
         } catch (error: any) {
             Alert.alert(t('common.error'), error.message || t('errors.unknownError'));
         } finally {
-            setLoading(false);
+            setSaving(false);
         }
     };
 
     const handleSummarize = async () => {
-        if (!content) {
+        if (!note.content) {
             Alert.alert(t('common.error'), t('errors.required'));
             return;
         }
@@ -60,7 +75,7 @@ export default function CreateNote() {
                 router.replace('/(auth)/signIn');
                 return;
             }
-            const result = await summarizeNote(token, content);
+            const result = await summarizeNote(token, note.content || '');
             setSummary(result.summary);
         } catch (error: any) {
             Alert.alert(t('common.error'), error.message || t('errors.unknownError'));
@@ -71,19 +86,25 @@ export default function CreateNote() {
 
     return (
         <ScrollView style={styles.container}>
+            {!isConnected && (
+                <View style={styles.offlineBanner}>
+                    <Text style={styles.offlineText}>{t('common.offlineMode')}</Text>
+                </View>
+            )}
+
             <View style={styles.content}>
                 <TextField
                     label={t('notes.title')}
-                    value={title}
-                    onChangeText={setTitle}
+                    value={note.title}
+                    onChangeText={(text) => setNote({ ...note, title: text })}
                     placeholder={t('notes.titlePlaceholder')}
                     error={errors.title}
                 />
 
                 <TextField
                     label={t('notes.content')}
-                    value={content}
-                    onChangeText={setContent}
+                    value={note.content}
+                    onChangeText={(text) => setNote({ ...note, content: text })}
                     placeholder={t('notes.contentPlaceholder')}
                     multiline
                     numberOfLines={12}
@@ -114,9 +135,9 @@ export default function CreateNote() {
                 ) : null}
 
                 <BaseButton
-                    title={t('notes.create')}
-                    onPress={handleCreateNote}
-                    loading={loading}
+                    title={saving ? t('notes.saving') : t('notes.save')}
+                    onPress={handleSave}
+                    loading={saving}
                     style={styles.button}
                 />
             </View>
@@ -140,5 +161,15 @@ const styles = StyleSheet.create({
     },
     summaryContainer: {
         marginTop: 16,
+    },
+    offlineBanner: {
+        backgroundColor: '#FFD700',
+        padding: 8,
+        borderRadius: 8,
+        marginBottom: 16,
+    },
+    offlineText: {
+        color: '#000',
+        textAlign: 'center',
     },
 }); 

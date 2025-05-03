@@ -37,6 +37,7 @@ export default {
         summarize: 'Yapay Zeka ile Özetle',
         summarizing: 'Özetleniyor...',
         created: 'Oluşturulma',
+        empty: 'Not bulunamadı',
     },
 
     // Settings

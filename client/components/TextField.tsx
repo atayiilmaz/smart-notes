@@ -5,6 +5,7 @@ interface TextFieldProps extends TextInputProps {
     label?: string;
     error?: string;
     containerStyle?: ViewStyle;
+    leftIcon?: React.ReactNode;
 }
 
 export const TextField: React.FC<TextFieldProps> = ({
@@ -12,20 +13,25 @@ export const TextField: React.FC<TextFieldProps> = ({
     error,
     containerStyle,
     style,
+    leftIcon,
     ...props
 }) => {
     return (
         <View style={[styles.container, containerStyle]}>
             {label && <Text style={styles.label}>{label}</Text>}
-            <TextInput
-                style={[
-                    styles.input,
-                    error && styles.inputError,
-                    style,
-                ]}
-                placeholderTextColor="#8E8E93"
-                {...props}
-            />
+            <View style={styles.inputContainer}>
+                {leftIcon && <View style={styles.iconContainer}>{leftIcon}</View>}
+                <TextInput
+                    style={[
+                        styles.input,
+                        error && styles.inputError,
+                        leftIcon && styles.inputWithIcon,
+                        style,
+                    ]}
+                    placeholderTextColor="#8E8E93"
+                    {...props}
+                />
+            </View>
             {error && <Text style={styles.errorText}>{error}</Text>}
         </View>
     );
@@ -41,7 +47,17 @@ const styles = StyleSheet.create({
         marginBottom: 8,
         color: '#000',
     },
+    inputContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+    },
+    iconContainer: {
+        position: 'absolute',
+        left: 12,
+        zIndex: 1,
+    },
     input: {
+        flex: 1,
         borderWidth: 1,
         borderColor: '#C7C7CC',
         borderRadius: 8,
@@ -49,6 +65,9 @@ const styles = StyleSheet.create({
         fontSize: 16,
         color: '#000',
         backgroundColor: '#fff',
+    },
+    inputWithIcon: {
+        paddingLeft: 40,
     },
     inputError: {
         borderColor: '#FF3B30',

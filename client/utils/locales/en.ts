@@ -37,6 +37,7 @@ export default {
         summarize: 'Summarize with AI',
         summarizing: 'Summarizing...',
         created: 'Created',
+        empty: 'No notes found',
     },
 
     // Settings

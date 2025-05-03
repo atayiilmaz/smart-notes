@@ -1,11 +1,55 @@
 import axios from "axios";
-import { addToSyncQueue, isOnline, saveNote, getAllNotes, getNote } from './storage';
+import { addToSyncQueue, isOnline, saveNote, getAllNotes, getNote, saveToken, getToken, removeToken } from './storage';
 
-const API_URL = 'http://localhost:3000/api';
+const API_URL = 'http://192.168.1.115:3000/api';
 
+// Axios instance conf
 const instance = axios.create({
-    baseURL: API_URL
+    baseURL: API_URL,
+    headers: {
+        'Content-Type': 'application/json'
+    }
 });
+
+// Token management
+const setAuthToken = async (token: string | null) => {
+    if (token) {
+        await saveToken(token);
+        instance.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+    } else {
+        await removeToken();
+        delete instance.defaults.headers.common['Authorization'];
+    }
+};
+
+instance.interceptors.request.use(
+    async (config) => {
+        try {
+            const token = await getToken();
+            if (token) {
+                config.headers.Authorization = `Bearer ${token}`;
+            }
+            return config;
+        } catch (error) {
+            console.error('Error getting token:', error);
+            return config;
+        }
+    },
+    (error) => Promise.reject(error)
+);
+
+instance.interceptors.response.use(
+    (response) => response,
+    async (error) => {
+        if (error.response?.status === 401) {
+            // Token geçersiz veya süresi dolmuş
+            await setAuthToken(null);
+            // Kullanıcıyı login sayfasına yönlendir
+            console.log('Session expired, please login again');
+        }
+        return Promise.reject(error);
+    }
+);
 
 // --- Types ---
 export interface Note {
@@ -27,10 +71,15 @@ export interface AuthResponse {
 export const login = async (email: string, password: string): Promise<AuthResponse> => {
     try {
         const res = await instance.post("/auth/login", { email, password });
+        await setAuthToken(res.data.token);
         return res.data;
     } catch (error) {
         throw axiosErrorToString(error, "Login failed");
     }
+};
+
+export const logout = async () => {
+    await setAuthToken(null);
 };
 
 export const register = async (username: string, email: string, password: string): Promise<any> => {
@@ -51,19 +100,8 @@ export const getNotes = async (token: string): Promise<Note[]> => {
     }
 
     try {
-        const response = await fetch(`${API_URL}/notes`, {
-            headers: {
-                'Authorization': `Bearer ${token}`,
-                'Content-Type': 'application/json',
-            },
-        });
-
-        if (!response.ok) {
-            throw new Error('Failed to fetch notes');
-        }
-
-        const data = await response.json();
-        const notes = data.data.map((note: any) => ({
+        const response = await instance.get('/notes');
+        const notes = response.data.data.map((note: any) => ({
             ...note,
             _id: note._id || note.id,
             id: undefined,
@@ -96,12 +134,10 @@ export const getNoteById = async (id: string, token: string): Promise<Note> => {
     }
 
     try {
-        const res = await instance.get(`/notes/${id}`, {
-            headers: { Authorization: `Bearer ${token}` }
-        });
+        const response = await instance.get(`/notes/${id}`);
         const note = {
-            ...res.data,
-            _id: res.data._id || res.data.id,
+            ...response.data,
+            _id: response.data._id || response.data.id,
             id: undefined,
             isLocal: false,
             isSynced: true
@@ -134,29 +170,16 @@ export const createNote = async (token: string, note: Omit<Note, '_id'>): Promis
     }
 
     try {
-        const response = await fetch(`${API_URL}/notes`, {
-            method: 'POST',
-            headers: {
-                'Authorization': `Bearer ${token}`,
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify(note),
-        });
-
-        if (!response.ok) {
-            throw new Error('Failed to create note');
-        }
-
-        const createdNote = await response.json();
-        const formattedNote = {
-            ...createdNote,
-            _id: createdNote._id || createdNote.id,
+        const response = await instance.post('/notes', note);
+        const createdNote = {
+            ...response.data,
+            _id: response.data._id || response.data.id,
             id: undefined,
             isLocal: false,
             isSynced: true
         };
-        await saveNote(formattedNote);
-        return formattedNote;
+        await saveNote(createdNote);
+        return createdNote;
     } catch (error) {
         const newNote = { 
             ...note, 
@@ -181,30 +204,17 @@ export const updateNote = async (token: string, id: string, note: Partial<Note>)
     }
 
     try {
-        const response = await fetch(`${API_URL}/notes/${id}`, {
-            method: 'PATCH',
-            headers: {
-                'Authorization': `Bearer ${token}`,
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify(note),
-        });
-
-        if (!response.ok) {
-            throw new Error('Failed to update note');
-        }
-
-        const updatedNote = await response.json();
-        const formattedNote = {
-            ...updatedNote,
-            _id: updatedNote._id || updatedNote.id,
+        const response = await instance.patch(`/notes/${id}`, note);
+        const updatedNote = {
+            ...response.data,
+            _id: response.data._id || response.data.id,
             id: undefined,
             isLocal: false,
             isSynced: true,
-            summary: updatedNote.summary || note.summary || ''
+            summary: response.data.summary || note.summary || ''
         };
-        await saveNote(formattedNote);
-        return formattedNote;
+        await saveNote(updatedNote);
+        return updatedNote;
     } catch (error) {
         const updatedNote = { ...note, _id: id, isLocal: true, isSynced: false };
         await saveNote(updatedNote as Note);
@@ -221,16 +231,7 @@ export const deleteNote = async (token: string, id: string): Promise<void> => {
     }
 
     try {
-        const response = await fetch(`${API_URL}/notes/${id}`, {
-            method: 'DELETE',
-            headers: {
-                'Authorization': `Bearer ${token}`,
-            },
-        });
-
-        if (!response.ok) {
-            throw new Error('Failed to delete note');
-        }
+        await instance.delete(`/notes/${id}`);
     } catch (error) {
         await addToSyncQueue('delete', { _id: id } as Note);
     }
@@ -245,20 +246,8 @@ export const summarizeNote = async (token: string, text: string): Promise<{ summ
     }
 
     try {
-        const response = await fetch(`${API_URL}/summarize`, {
-            method: 'POST',
-            headers: {
-                'Authorization': `Bearer ${token}`,
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({ text }),
-        });
-
-        if (!response.ok) {
-            throw new Error('Failed to summarize note');
-        }
-
-        return await response.json();
+        const response = await instance.post('/summarize', { text });
+        return response.data;
     } catch (error) {
         console.error('Error summarizing note:', error);
         throw error;

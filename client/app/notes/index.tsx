@@ -1,25 +1,39 @@
 import React, { useEffect, useState } from 'react';
-import { View, StyleSheet, FlatList, RefreshControl, TextInput, TouchableOpacity } from 'react-native';
-import { useRouter, useLocalSearchParams, useFocusEffect } from 'expo-router';
+import { View, StyleSheet, FlatList, Alert, TouchableOpacity, Text } from 'react-native';
+import { useRouter, useFocusEffect } from 'expo-router';
 import { Note } from '../../utils/api';
-import { getToken } from '../../utils/storage';
+import { getToken, isOnline } from '../../utils/storage';
 import { getNotes } from '../../utils/api';
 import { NoteCard } from '../../components/NoteCard';
 import { BaseButton } from '../../components/BaseButton';
-import { syncNotes } from '../../utils/sync';
 import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
+import { TextField } from '../../components/TextField';
 
-export default function Notes() {
+export default function NotesList() {
     const router = useRouter();
-    const { refresh } = useLocalSearchParams<{ refresh?: string }>();
     const { t } = useTranslation();
     const [notes, setNotes] = useState<Note[]>([]);
-    const [filteredNotes, setFilteredNotes] = useState<Note[]>([]);
-    const [searchQuery, setSearchQuery] = useState('');
     const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
-    const [error, setError] = useState<string | null>(null);
+    const [isConnected, setIsConnected] = useState(true);
+    const [searchQuery, setSearchQuery] = useState('');
+
+    useEffect(() => {
+        fetchNotes();
+        checkConnection();
+    }, []);
+
+    useFocusEffect(
+        React.useCallback(() => {
+            fetchNotes();
+        }, [])
+    );
+
+    const checkConnection = async () => {
+        const connected = await isOnline();
+        setIsConnected(connected);
+    };
 
     const fetchNotes = async () => {
         try {
@@ -29,106 +43,77 @@ export default function Notes() {
                 return;
             }
             const fetchedNotes = await getNotes(token);
-            setNotes(Array.isArray(fetchedNotes) ? fetchedNotes : []);
-            setFilteredNotes(Array.isArray(fetchedNotes) ? fetchedNotes : []);
-            setError(null);
-        } catch (err: any) {
-            setError(err?.message || 'Failed to fetch notes');
+            setNotes(fetchedNotes);
+        } catch (error: any) {
+            Alert.alert(t('common.error'), error.message || t('errors.unknownError'));
         } finally {
             setLoading(false);
             setRefreshing(false);
         }
     };
 
-    useFocusEffect(
-        React.useCallback(() => {
-            fetchNotes();
-        }, [])
-    );
-
-    useEffect(() => {
-        if (refresh === 'true') {
-            fetchNotes();
-            router.setParams({ refresh: undefined });
-        }
-    }, [refresh]);
-
-    useEffect(() => {
-        if (searchQuery.trim() === '') {
-            setFilteredNotes(notes);
-        } else {
-            const filtered = notes.filter(note => 
-                note.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                note.content.toLowerCase().includes(searchQuery.toLowerCase())
-            );
-            setFilteredNotes(filtered);
-        }
-    }, [searchQuery, notes]);
-
-    const handleRefresh = async () => {
+    const handleRefresh = () => {
         setRefreshing(true);
-        await syncNotes();
-        await fetchNotes();
-    };
-
-    const handleNotePress = (note: Note) => {
-        if (note._id) {
-            router.push(`/notes/${note._id}` as any);
-        }
+        fetchNotes();
     };
 
     const handleCreateNote = () => {
-        router.push('/notes/create' as any);
+        router.push('/notes/create');
     };
 
-    if (loading) {
-        return (
-            <View style={styles.container}>
-                <View style={styles.loadingContainer}>
-                    <Ionicons name="refresh" size={24} color="#007AFF" />
-                </View>
-            </View>
-        );
-    }
+    const handleSettings = () => {
+        router.push('/settings');
+    };
+
+    const filteredNotes = notes.filter(note => 
+        note.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        note.content.toLowerCase().includes(searchQuery.toLowerCase())
+    );
+
+    const renderNote = ({ item }: { item: Note }) => (
+        <NoteCard
+            note={item}
+            onPress={() => router.push(`/notes/${item._id}`)}
+            isOffline={!isConnected}
+        />
+    );
 
     return (
         <View style={styles.container}>
+            {!isConnected && (
+                <View style={styles.offlineBanner}>
+                    <Text style={styles.offlineText}>{t('common.offlineMode')}</Text>
+                </View>
+            )}
+
             <View style={styles.header}>
-                <TextInput
-                    style={styles.searchBar}
-                    placeholder={t('notes.search')}
-                    value={searchQuery}
-                    onChangeText={setSearchQuery}
-                />
-                <TouchableOpacity
-                    onPress={() => router.push('/settings')}
-                    style={styles.settingsButton}
-                >
+                <View style={styles.searchContainer}>
+                    <TextField
+                        placeholder={t('notes.search')}
+                        value={searchQuery}
+                        onChangeText={setSearchQuery}
+                        style={styles.searchInput}
+                        leftIcon={<Ionicons name="search" size={20} color="#8E8E93" />}
+                    />
+                </View>
+                <TouchableOpacity onPress={handleSettings} style={styles.settingsButton}>
                     <Ionicons name="settings-outline" size={24} color="#007AFF" />
                 </TouchableOpacity>
             </View>
 
             <FlatList
                 data={filteredNotes}
-                renderItem={({ item }) => (
-                    <NoteCard
-                        note={item}
-                        onPress={() => handleNotePress(item)}
-                        style={styles.noteCard}
-                    />
-                )}
-                keyExtractor={(item) => item._id || Math.random().toString()}
-                contentContainerStyle={styles.listContent}
-                refreshControl={
-                    <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
-                }
+                renderItem={renderNote}
+                keyExtractor={(item) => item._id || ''}
+                contentContainerStyle={styles.list}
+                refreshing={refreshing}
+                onRefresh={handleRefresh}
                 ListEmptyComponent={
-                    <View style={styles.emptyContainer}>
-                        <BaseButton
-                            title={t('notes.createFirstNote')}
-                            onPress={handleCreateNote}
-                        />
-                    </View>
+                    !loading ? (
+                        <View style={styles.emptyContainer}>
+                            <Text style={styles.emptyText}>{t('notes.empty')}</Text>
+                        </View>
+                    ) : null
                 }
             />
 
@@ -145,41 +130,41 @@ const styles = StyleSheet.create({
         backgroundColor: '#F2F2F7',
     },
     header: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        padding: 12,
         backgroundColor: '#fff',
         borderBottomWidth: 1,
         borderBottomColor: '#E5E5EA',
-        padding: 16,
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'space-between',
     },
-    searchBar: {
-        height: 40,
-        backgroundColor: '#F2F2F7',
-        borderRadius: 8,
-        paddingHorizontal: 12,
+    searchContainer: {
         flex: 1,
-        marginRight: 8,
+        justifyContent: 'center',
+    },
+    searchInput: {
+        height: 40,
+        fontSize: 16,
+        margin: 0,
+        padding: 0,
     },
     settingsButton: {
-        padding: 8,
-    },
-    loadingContainer: {
-        flex: 1,
+        padding: 6,
+        marginLeft: 8,
         justifyContent: 'center',
         alignItems: 'center',
     },
-    listContent: {
+    list: {
         padding: 16,
-    },
-    noteCard: {
-        marginBottom: 16,
     },
     emptyContainer: {
         flex: 1,
         justifyContent: 'center',
         alignItems: 'center',
-        padding: 24,
+        padding: 16,
+    },
+    emptyText: {
+        fontSize: 16,
+        color: '#8E8E93',
     },
     fab: {
         position: 'absolute',
@@ -193,11 +178,18 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         elevation: 4,
         shadowColor: '#000',
-        shadowOffset: {
-            width: 0,
-            height: 2,
-        },
+        shadowOffset: { width: 0, height: 2 },
         shadowOpacity: 0.25,
-        shadowRadius: 3.84,
+        shadowRadius: 4,
+    },
+    offlineBanner: {
+        backgroundColor: '#FFD700',
+        padding: 8,
+        borderRadius: 8,
+        margin: 16,
+    },
+    offlineText: {
+        color: '#000',
+        textAlign: 'center',
     },
 });
